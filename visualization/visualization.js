@@ -11,12 +11,49 @@ var __copyHandler = function(){
     return {
         "updateTouchedCopies": function(touches)
         {
-            Object.keys(touches).forEach(function(t){
+            //first go through the ones that are already being touched
+            Object.keys(copiesToTouches).forEach(function(t){
                 var touch = touches[t];
-                if(touch == undefined) return;
-                if(copiesToTouches[touch.id] == undefined) return;
-                copiesToTouches[touch.id].manual_updatePosition(touch.x, touch.y);
+                //maybe there's no touches we care about
+                if(copiesToTouches[t] == undefined) return;
+                //if touch doesn't exist anymore, we need to do something with this floating object
+                if(touch == undefined)
+                {
+                    //2 cases. floating mid air, get rid of it. floating above a dock, dock!
+                    if(copiesToTouches[t].getCoordinates().y > $(document).height() - 200)
+                        copiesDocked.push(copiesToTouches[t]);
+                    else
+                        delete copiesToTouches[t];
+                    copiesToTouches[t] = undefined;
+
+                }
+                else
+                //else we have to move it with the finger
+                    copiesToTouches[touch.id].manual_updatePosition(touch.x, touch.y);
             });
+
+
+
+
+        },
+        "updateDockedCopies": function(touches)
+        {
+            var copiesDocked_new = [];
+
+            copiesDocked.forEach(function(c){
+                var touch = c.touched(touches);
+                if(touch == undefined)
+                {
+                    copiesDocked_new.push(c);
+                }
+                else
+                {
+                    copiesToTouches[touch] = c;
+                }
+
+
+            });
+            copiesDocked = copiesDocked_new;
         },
         "generateCopyFor": function(touch, copy) {
             //we're already touching this copy
@@ -33,6 +70,9 @@ var __copyHandler = function(){
                 if( copiesToTouches[c] == undefined)
                  return;
                copiesToTouches[c].draw();
+            });
+            copiesDocked.forEach(function(c){
+                c.draw();
             });
         }
 
@@ -56,6 +96,7 @@ var Circle = function(){
     var _data;
     var _processing;
     var _pressed = false;
+    var _isCopy = false;
 
 
     var drawCircle =  function()
@@ -113,14 +154,37 @@ var Circle = function(){
                 var mouseDist = _processing.dist(_processing.screenX(_x, _y), _processing.screenY(_x, _y), touch.x, touch.y);
                 if (mouseDist < 5) {
                     _pressed = true;
-                    __copyHandler.generateCopyFor(touch, _self);
-                }
-                else
-                    _pressed = false;
-                //make a copy
 
+                }
+                else {
+                    _pressed = false;
+                    return;
+                }
+                //make a copy
+                if(!_isCopy && _pressed) {
+                    __copyHandler.generateCopyFor(touch, _self);
+                    return;
+                }
+                //it's a copy, move it around
+                _self.manual_updatePosition(touch.x, touch.y);
             });
 
+
+        },
+        "touched": function(touches){
+            var found = undefined;
+
+            Object.keys(touches).forEach(function (t) {
+                if (touches[t] == undefined) return;
+                //check if mouse isn't clicked in item
+                var touch = touches[t];
+                var mouseDist = _processing.dist(_processing.screenX(_x, _y), _processing.screenY(_x, _y), touch.x, touch.y);
+                if (mouseDist < 5) {
+                    found = t;
+                    return false; //break out of foreach
+                }
+            });
+            return found;
 
         },
         "draw": function () {
@@ -148,11 +212,16 @@ var Circle = function(){
             _x = x;
             _y = y;
         },
+        "isCopy": function(b){
+            _isCopy = b;
+        },
         "copy": function () {
             var c = new Circle();
             c.init(_x, _y, _data,_processing);
+            c.isCopy(true);
             return c;
         },
+
         "debug":function(){
             console.log(_data);
         }
@@ -244,7 +313,7 @@ var visualization = function(){
             d.update(_touches,d);
         });
         __copyHandler.updateTouchedCopies(_touches);
-
+        __copyHandler.updateDockedCopies(_touches);
 
 
 
