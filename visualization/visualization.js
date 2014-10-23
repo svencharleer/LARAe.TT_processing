@@ -221,7 +221,9 @@ var visualization = function(){
 
     var _offset = {x:0,y:0};
     var _pOffset = {x:0,y:0};
-    var zoom = 1;
+    var _zoom = 1;
+    var _mostRightY = 0;
+    var _highestX = 0;
 
 //METHODS
 
@@ -259,9 +261,14 @@ var visualization = function(){
         processing.background(0);
         //processing.noStroke();
 
+        Object.keys(_yPerEvent).forEach(function(y){
+
+            drawPhase(_yPerEvent[y].phase, _yPerEvent[y].y, processing);
+        });
+
         _circles.forEach(function(d)
         {
-            drawPhase(d.getPhase(), d.getCoordinates().x, processing);
+
             d.draw();
         });
         processing.stroke(255,255,255);
@@ -337,7 +344,7 @@ var visualization = function(){
 
 
     var phaseColors = [0xCC1c3341, 0xCC244153, 0xCC2c5169,0xCC345e79, 0xCC3e7091,0xCC4781a6]
-    var drawPhase = function(phase, x, processing)
+    var drawPhase = function(phase, y, processing)
     {
 
         switch(phase)
@@ -368,7 +375,7 @@ var visualization = function(){
 
         processing.rectMode(processing.CORNERS);
         processing.noStroke();
-        processing.rect(x-10, 0, x+10, 300);
+        processing.rect(0, y-10, _highestX+10, y+10);
        //console.log("draw rect");
 
     }
@@ -395,7 +402,7 @@ var visualization = function(){
     var createCircles = function(processing)
     {
         //make a circle out of every node
-        var mostRightY = 0;
+
 
 
         var xSpacing = 20;
@@ -405,16 +412,20 @@ var visualization = function(){
         var y = 10;
         _nodes.forEach(function(n)
         {
-            if(y > mostRightY) mostRightY = y;
+            if(y > _mostRightY) _mostRightY = y;
             if(_yPerEvent[n.object] == undefined) {
-                y = mostRightY;
+                y = _mostRightY;
                 y+=ySpacing;
-                _yPerEvent[n.object] = y;
+                _yPerEvent[n.object] = {};
+                _yPerEvent[n.object].y = y;
+                _yPerEvent[n.object].phase = n.context.phase;
+
+
                 //x = 10;
             }
             else
             {
-                y = _yPerEvent[n.object];
+                y = _yPerEvent[n.object].y;
             }
 
             x += xSpacing;
@@ -426,6 +437,7 @@ var visualization = function(){
 
 
         });
+        _highestX = x;
     }
 
     var createPhases = function() {
