@@ -20,8 +20,13 @@ var __copyHandler = function(){
                 if(touch == undefined)
                 {
                     //2 cases. floating mid air, get rid of it. floating above a dock, dock!
-                    if(copiesToTouches[t].getCoordinates().y > $(document).height() - 200)
+                    if(copiesToTouches[t].getCoordinates().y > $(document).height() - 270) {
+                        //docked!
+                        copiesToTouches[t].docked(true);
                         copiesDocked.push(copiesToTouches[t]);
+                        htmlDockController.addItem({id:"test", data:copiesToTouches[t].getData(),x:copiesToTouches[t].getCoordinates().x});
+
+                    }
                     else
                         delete copiesToTouches[t];
                     copiesToTouches[t] = undefined;
@@ -48,6 +53,7 @@ var __copyHandler = function(){
                 }
                 else
                 {
+                    c.docked(false);
                     copiesToTouches[touch] = c;
                 }
 
@@ -60,11 +66,17 @@ var __copyHandler = function(){
             if(copiesToTouches[touch.id] != undefined)
                 return;
 
-            copy.manual_updatePosition(touch.x, touch.y);
+
             copiesToTouches[touch.id] = copy.copy();
+            copiesToTouches[touch.id].manual_updatePosition(touch.x, touch.y);
         },
-        "draw": function()
+        "draw": function(processing)
         {
+            //draw dock
+            processing.rectMode(processing.CORNERS);
+            processing.noStroke();
+            processing.fill(0xCC323232);
+            processing.rect(0, $(document).height()-270, $(document).width(), $(document).height());
 
             Object.keys(copiesToTouches).forEach(function(c){
                 if( copiesToTouches[c] == undefined)
@@ -93,11 +105,22 @@ var loadVisualization = function() {
 var Circle = function(){
 
     var _x,_y;
+
     var _data;
     var _processing;
     var _pressed = false;
     var _isCopy = false;
+    var _docked = false;
 
+    var drawTriangle = function()
+    {
+        _processing.noFill();
+        _processing.strokeWeight(1);
+        _processing.stroke(0xCC33FF99);
+        if(_pressed)
+            _processing.fill(255);
+        _processing.triangle(_x-5,_y+5,_x+5,_y+5,_x,_y-5);
+    }
 
     var drawCircle =  function()
     {
@@ -132,11 +155,24 @@ var Circle = function(){
         _processing.endShape(_processing.CLOSE);
         _processing.popMatrix();
     };
+    var drawDocked = function()
+    {
+        drawCircle();
+        /*_processing.pushMatrix();
+        _processing.translate(_x,_y);
+        _processing.fill(0xCC33FF99);
+        if(_data.originalrequest.value != undefined && _data.originalrequest.value.description)
+            _processing.text(_data.originalrequest.value.description, 10, 10, 200, 100);
+        else
+            _processing.text(_data.object, 10, 10, 70, 80);
+        _processing.popMatrix();*/
+    };
     return{
 
         "init": function (x, y, data, processing) {
             _x = x;
             _y = y;
+
             _data = data;
             _processing = processing;
 
@@ -151,7 +187,7 @@ var Circle = function(){
                 if (touches[t] == undefined) return;
                 //check if mouse isn't clicked in item
                 var touch = touches[t];
-                var mouseDist = _processing.dist(_processing.screenX(_x, _y), _processing.screenY(_x, _y), touch.x, touch.y);
+                var mouseDist = _processing.dist(_processing.screenX(_x,_y), _processing.screenY(_x,_y), touch.x, touch.y);
                 if (mouseDist < 5) {
                     _pressed = true;
 
@@ -178,7 +214,7 @@ var Circle = function(){
                 if (touches[t] == undefined) return;
                 //check if mouse isn't clicked in item
                 var touch = touches[t];
-                var mouseDist = _processing.dist(_processing.screenX(_x, _y), _processing.screenY(_x, _y), touch.x, touch.y);
+                var mouseDist = _processing.dist(_processing.screenX(_x,_y), _processing.screenY(_x,_y), touch.x, touch.y);
                 if (mouseDist < 5) {
                     found = t;
                     return false; //break out of foreach
@@ -188,10 +224,17 @@ var Circle = function(){
 
         },
         "draw": function () {
-            Processing.getInstanceById("canvas1");
+            if(_docked)
+            {
+                drawDocked();
+                return;
+            }
             switch (_data.verb) {
                 case "rated":
                     drawStar();
+                    break;
+                case "response":
+                    drawTriangle();
                     break;
                 default:
                     drawCircle();
@@ -208,6 +251,9 @@ var Circle = function(){
         "getUser": function () {
             return _data.username.toLowerCase();
         },
+        "getData": function(){
+            return _data;
+        },
         "manual_updatePosition": function (x, y) {
             _x = x;
             _y = y;
@@ -220,6 +266,10 @@ var Circle = function(){
             c.init(_x, _y, _data,_processing);
             c.isCopy(true);
             return c;
+        },
+        "docked":function(b)
+        {
+            _docked = b;
         },
 
         "debug":function(){
@@ -288,7 +338,7 @@ var visualization = function(){
     var _touches = {};
 
 
-    var _offset = {x:0,y:0};
+    var _offset = {x:50,y:50};
     var _pOffset = {x:0,y:0};
     var _zoom = 1;
     var _mostRightY = 0;
@@ -299,7 +349,7 @@ var visualization = function(){
 
     var setup = function () {
         var processing = Processing.getInstanceById("canvas1");
-        processing.size($(document).width(), $(document).height(), processing.JAVA2D);
+        processing.size($(document).width(), $(document).height()-200, processing.JAVA2D);
 
 
     };
@@ -307,6 +357,7 @@ var visualization = function(){
     var draw = function () {
 
         var processing = Processing.getInstanceById("canvas1");
+        processing.background(0);
         //updating
         _circles.forEach(function(d)
         {
@@ -318,27 +369,31 @@ var visualization = function(){
 
 
         //drawing
+
+
+
+
         processing.pushMatrix();
 
-        //scaling/panning stuff
-        /*
-        processing.scale(zoom);
-        processing.translate(_offset.x/zoom, _offset.y/zoom);
-        */
+        processing.translate(_offset.x/_zoom, _offset.y/_zoom);
+
+        //do updates within matrix transofmrations
+        _circles.forEach(function(d)
+        {
+            d.update(_touches,d);
+        });
 
 
-        processing.background(0);
         //processing.noStroke();
 
         Object.keys(_yPerEvent).forEach(function(y){
 
-            drawPhase(_yPerEvent[y].phase, _yPerEvent[y].y, processing);
+            drawPhase(_yPerEvent[y].phase, _yPerEvent[y].subphase, _yPerEvent[y].y, processing);
         });
 
         _circles.forEach(function(d)
         {
-
-            d.draw();
+            d.draw(processing);
         });
         processing.stroke(255,255,255);
         processing.strokeWeight(1);
@@ -357,9 +412,19 @@ var visualization = function(){
             }
         });
 
-        __copyHandler.draw();
+
+
 
         processing.popMatrix();
+        processing.pushMatrix();
+
+        processing.translate(0, _offset.y/_zoom);
+        Object.keys(_yPerEvent).forEach(function(y){
+
+            drawPhaseHeader(_yPerEvent[y].phase, _yPerEvent[y].subphase, _yPerEvent[y].y, processing);
+        });
+        processing.popMatrix();
+        __copyHandler.draw(processing);
         drawLegends(processing);
         processing.smooth();
     };
@@ -412,10 +477,9 @@ var visualization = function(){
     }
 
 
-    var phaseColors = [0xCC1c3341, 0xCC244153, 0xCC2c5169,0xCC345e79, 0xCC3e7091,0xCC4781a6]
-    var drawPhase = function(phase, y, processing)
+    var phaseColors = [0xCC1c3341, 0xCC244153, 0xCC2c5169,0xCC345e79, 0xCC3e7091,0xCC4781a6];
+    var setPhaseColor = function(phase, processing)
     {
-
         switch(phase)
         {
             case 1:
@@ -441,10 +505,27 @@ var visualization = function(){
                 console.log("phase" + phase);
                 processing.fill(0);
         }
-
+    };
+    /*
+        draw the header. this one does not translate over x axis it'll be a steady part of the UI
+    */
+    var drawPhaseHeader = function(phase, subphase, y, processing)
+    {
+        setPhaseColor(phase,processing);
+        processing.rectMode(processing.CORNERS);
+        processing.noStroke();
+        processing.rect(0, y-10, 10, y+10);
+        processing.fill(255);
+        processing.text(subphase, 0, y)
+    };
+    var drawPhase = function(phase, subphase, y, processing)
+    {
+        setPhaseColor(phase,processing);
         processing.rectMode(processing.CORNERS);
         processing.noStroke();
         processing.rect(0, y-10, _highestX+10, y+10);
+        processing.fill(255);
+
        //console.log("draw rect");
 
     }
@@ -482,21 +563,22 @@ var visualization = function(){
         _nodes.forEach(function(n)
         {
             if(y > _mostRightY) _mostRightY = y;
-            if(_yPerEvent[n.object] == undefined) {
-                y = _mostRightY;
-                y+=ySpacing;
-                _yPerEvent[n.object] = {};
-                _yPerEvent[n.object].y = y;
-                _yPerEvent[n.object].phase = n.context.phase;
+            if(n.verb == "response") y = 5;
+            else {
+                if (_yPerEvent[n.object] == undefined) {
+                    y = _mostRightY;
+                    y += ySpacing;
+                    _yPerEvent[n.object] = {};
+                    _yPerEvent[n.object].y = y;
+                    _yPerEvent[n.object].phase = n.context.phase;
+                    _yPerEvent[n.object].subphase = n.context.subphase;
 
-
-                //x = 10;
+                    //x = 10;
+                }
+                else {
+                    y = _yPerEvent[n.object].y;
+                }
             }
-            else
-            {
-                y = _yPerEvent[n.object].y;
-            }
-
             x += xSpacing;
 
             var c = new Circle();
@@ -538,7 +620,7 @@ var visualization = function(){
             var processing = Processing.getInstanceById("canvas1");
             createCircles(processing);
             createPhases();
-            linkUsersToCircles();
+            //linkUsersToCircles();
 
 
 

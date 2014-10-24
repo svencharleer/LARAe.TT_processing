@@ -14,6 +14,7 @@
 
 
     <script type="application/javascript" src="data/load.js"></script>
+    <script type="application/javascript" src="visualization/htmlDockController.js"></script>
     <script type="application/javascript" src="visualization/visualization.js"></script>
 
 
@@ -22,6 +23,8 @@
 <body id="main" onload="javascript:load(loadVisualization)">
 
 <canvas id="canvas1" width="200" height="200"></canvas>
+
+<div id="docking" style="width:100%;height:200px;border:solid 1px black"></div>
 
 <script type="application/javascript">
     var client = new Tuio.Client({
