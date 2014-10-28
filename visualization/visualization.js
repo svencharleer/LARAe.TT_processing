@@ -90,17 +90,62 @@ var __copyHandler = function(){
 
     }
 }();
-var loadVisualization = function() {
 
-    //filter it
-    var xf = crossfilter(__data);
-    var byUser = xf.dimension(function(d){return d.username.toLowerCase();});
+var UserToken = function(){
+    var _data;
+    var _x, _y;
+    var _detached;
+    var _processing;
+    return {
+        "init" : function(x,y,data,processing)
+        {
+          _data = data;
+            _x = x;
+            _y = y;
+            _processing = processing;
+        },
+        "detach" : function(b)
+        {
 
-    vis =  new visualization();
-    vis.init(byUser.top("Infinity"));
+        },
+        "update" : function()
+        {
 
+        },
+        "draw"  :function()
+        {
+            _processing.text(_data.user.name, _x, _y);
+        }
+    }
+}
 
-};
+var __userHandler = function() {
+    var _users = [];
+    var _processing;
+   return {
+       "init" : function(users,processing)
+       {
+           _processing = processing;
+           var i = 10;
+            users.forEach(function(u){
+                var user = new UserToken();
+                //the data we get from users actually contains the key (facebook_.. ) + phases
+                //__users contains real user data. so we gotta put those together
+                var userData = __users[u.key] != undefined ? __users[u.key] : u.key;
+                var data = {user: userData, phases: u.value}
+                user.init($(document).width()-200,i,data,processing);
+                _users.push(user);
+                i+=20;
+            });
+       },
+       "draw" : function(){
+            _users.forEach(function(u){
+                u.draw();
+            })
+       }
+   }
+}();
+
 
 var Circle = function(){
 
@@ -314,12 +359,14 @@ var visualization = function(){
         var dim = xf.dimension(function(f){return f.username.toLowerCase();});
         return dim.group().reduce(
             function(p,v){
-                p.count++;return p;
+                if(p.countByPhase[v.context.phase] == undefined)
+                    p.countByPhase[v.context.phase] = 0;
+                p.countByPhase[v.context.phase]++;return p;
 
             },
             function(p,v){
-                p.count--;return p;},
-            function(){return {count:0};}
+                p.countByPhase[v.context.phase]--;return p;},
+            function(){return {countByPhase:{}};}
         ).top(Infinity);
     }
 
@@ -329,6 +376,8 @@ var visualization = function(){
     var _nodes;
     var _links;
     var _users;
+
+    var _canvas;
 
     var _circles = [];
     var _phases = [];
@@ -348,7 +397,7 @@ var visualization = function(){
 
 
     var setup = function () {
-        var processing = Processing.getInstanceById("canvas1");
+        var processing = Processing.getInstanceById(_canvas);
         processing.size($(document).width(), $(document).height()-200, processing.JAVA2D);
 
 
@@ -356,7 +405,7 @@ var visualization = function(){
 
     var draw = function () {
 
-        var processing = Processing.getInstanceById("canvas1");
+        var processing = Processing.getInstanceById(_canvas);
         processing.background(0);
         //updating
         _circles.forEach(function(d)
@@ -424,6 +473,7 @@ var visualization = function(){
             drawPhaseHeader(_yPerEvent[y].phase, _yPerEvent[y].subphase, _yPerEvent[y].y, processing);
         });
         processing.popMatrix();
+        __userHandler.draw();
         __copyHandler.draw(processing);
         drawLegends(processing);
         processing.smooth();
@@ -471,7 +521,7 @@ var visualization = function(){
             }*/
         };
 
-        var canvas = document.getElementById("canvas1");
+        var canvas = document.getElementById(_canvas);
         // attaching the sketch to the canvas
         var p = new Processing(canvas, sketch);
     }
@@ -549,6 +599,7 @@ var visualization = function(){
     }
 
 
+
     var createCircles = function(processing)
     {
         //make a circle out of every node
@@ -609,18 +660,19 @@ var visualization = function(){
 
 
     return {
-        "init" : function(data)
+        "init" : function(data, canvas)
         {
-
+            _canvas = canvas;
             _nodes = preprocess_nodes(data);
             _links = preprocess_links(data);
             _users = preprocess_users(data);
 
             initProcessing();
-            var processing = Processing.getInstanceById("canvas1");
+            var processing = Processing.getInstanceById(_canvas);
             createCircles(processing);
             createPhases();
             //linkUsersToCircles();
+            __userHandler.init(_users,processing);
 
 
 
@@ -636,3 +688,17 @@ var visualization = function(){
     };
 
 }
+
+
+var loadVisualization = function() {
+
+    //filter it
+    var xf = crossfilter(__data);
+    var byUser = xf.dimension(function(d){return d.username.toLowerCase();});
+
+    vis =  new visualization();
+    vis.init(byUser.top("Infinity"),"canvas1");
+   
+
+
+};
