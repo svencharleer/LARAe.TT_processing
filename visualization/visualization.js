@@ -119,13 +119,21 @@ var __filterHandler = function()
             //by events
 
             //undo previous highlighting of this color
-            items.forEach(function(d){
-                d.highlight(dock.dock.getColor(),false);
-            })
+            if(byUser.top(Infinity) > 0) {
+                items.forEach(function (d) {
+                    d.highlight(dock.dock.getColor(), 0);
+                })
+            }
+            else
+            {
+                items.forEach(function (d) {
+                    d.highlight(dock.dock.getColor(), 1);
+                })
+            }
             //now highlight the ones we found
 
             byUser.top(Infinity).forEach(function(d){
-                d.highlight(dock.dock.getColor(),true);
+                d.highlight(dock.dock.getColor(),2);
             })
         });
 
@@ -158,6 +166,13 @@ var __filterHandler = function()
             //get events
             console.log(_filtersByDock);
             updateVisualization();
+        },
+        "init" : function(docks)
+        {
+            docks.forEach(function(d){
+                _filtersByDock[d.id()] = new Filter();
+                _filtersByDock[d.id()].dock = d;
+            });
         }
 
     }
@@ -344,7 +359,9 @@ var __userHandler = function() {
                 var user = new UserToken();
                 //the data we get from users actually contains the key (facebook_.. ) + phases
                 //__users contains real user data. so we gotta put those together
-                var userData = __users[u.key] != undefined ? __users[u.key] : u.key;
+                var userData = __users[u.key] != undefined ? __users[u.key] : undefined;
+                if(userData == undefined) return;
+
                 var data = {id: u.key, user: userData, phases: u.value}
                 user.init($(document).width()-200,i,data,processing);
                 _users.push(user);
@@ -378,6 +395,7 @@ var Circle = function(){
     var _isCopy = false;
     var _docked = false;
     var _type = "EVENT";
+    // 0 1 2 (0 dimmed, 1 normal, 2 highlighted)
     var _highlight = {};
 
     var drawTriangle = function()
@@ -423,8 +441,10 @@ var Circle = function(){
         _processing.endShape(_processing.CLOSE);
         _processing.popMatrix();
     };
+    var _pulse = 1.0;
     var drawSquare = function()
     {
+
         //let's have a maximum of 4 docks for now
         //draw a square with each quadrant the color of the dock if highlighted
         var size = 2;
@@ -434,22 +454,28 @@ var Circle = function(){
         _processing.noStroke();
         var i = 0;
         Object.keys(_highlight).forEach(function(k){
-            if(_highlight[k] == true) {
-                _processing.fill(parseInt(k));
+            if(_highlight[k] == 2) {
+                //will also pulsate
+                var pulseTransformed = Math.sin(_pulse * (Math.PI / 180));
+                var color = (parseInt(k) & 0xffffff) | (parseInt(pulseTransformed * 255) << 24);
+                _processing.fill(color);
+            }
+            else if(_highlight[k] == 1) {
+                _processing.fill(128);
             }
             else
             {
                 _processing.fill(255);
             }
-                var x = _x + size * ((i % 2)+ 1);
-                var y = _y + size * ((parseInt(i / 2)) + 1);
+            var x = _x + size * ((i % 2)) + ((i % 2)) * 2;
+            var y = _y + size * ((parseInt(i / 2))) + ((parseInt(i / 2))) * 2;
                 _processing.rect(x, y, x + size, y+ size);
 
 
             i++;
         })
 
-        for(var j = i; j < 1;j++)
+        for(var j = i; j < 4;j++)
         {
             _processing.fill(255);
             var x = _x + size * ((j % 2)) + ((j % 2)) * 2;
@@ -510,6 +536,9 @@ var Circle = function(){
                 //it's a copy, move it around
                 _self.manual_updatePosition(touch.x, touch.y);
             });
+
+            //update pulsing
+            _pulse = (_pulse + 1) % 180;
 
 
         },
@@ -589,9 +618,9 @@ var Circle = function(){
         {
             return _type;
         },
-        "highlight" : function(color,b)
+        "highlight" : function(color,setting)
         {
-            _highlight[color] = b;
+            _highlight[color] = setting;
         }
 
 
@@ -613,7 +642,8 @@ var visualization = function(){
         var byEvents = xf.dimension(function(f){return f.event_id;});
         var byVerb =  xf.dimension(function(f){return f.verb;});
         byVerb.filter(function(d){
-            if(d != "read" && d != "answer_given" && d != "startRun" && d != "like" && d != "delete_like")
+            if(d != "read" && d != "answer_given" && d != "startRun" && d != "like" && d != "delete_like" &&
+                d != "delete_discussion_topic_reply" && d!= "delete_comment" && d!= "delete_arlearntask" && d!= "delete_mindmeistermap")
                 return d;
         });
         return byEvents.bottom(Infinity);
@@ -701,7 +731,7 @@ var visualization = function(){
 
         processing.pushMatrix();
         if(_offset.x > 100) _offset.x = 100;
-        processing.translate(_offset.x/_zoom, _offset.y/_zoom);
+        //processing.translate(_offset.x/_zoom, _offset.y/_zoom);
 
         //do updates within matrix transofmrations
         _circles.forEach(function(d)
@@ -744,10 +774,10 @@ var visualization = function(){
         processing.popMatrix();
         processing.pushMatrix();
 
-        processing.translate(0, _offset.y/_zoom);
+        //processing.translate(0, _offset.y/_zoom);
         Object.keys(_yPerEvent).forEach(function(y){
 
-            drawPhaseHeader(_yPerEvent[y].phase, _yPerEvent[y].subphase, _yPerEvent[y].y, processing);
+            drawPhaseHeader(_yPerEvent[y].phase, _yPerEvent[y].title, _yPerEvent[y].y, processing);
         });
         processing.popMatrix();
        __docks.forEach(function(d){
@@ -845,14 +875,14 @@ var visualization = function(){
     /*
         draw the header. this one does not translate over x axis it'll be a steady part of the UI
     */
-    var drawPhaseHeader = function(phase, subphase, y, processing)
+    var drawPhaseHeader = function(phase, title, y, processing)
     {
         setPhaseColor(phase,processing);
         processing.rectMode(processing.CORNERS);
         processing.noStroke();
         processing.rect(0, y-10, 100, y+10);
         processing.fill(255);
-        processing.text(subphase, 0, y)
+        processing.text(title, 0, y)
     };
     var drawPhase = function(phase, subphase, y, processing)
     {
@@ -892,7 +922,7 @@ var visualization = function(){
 
 
 
-        var xSpacing = 5;
+        var xSpacing = 10;
         var ySpacing = 20;
 
         var x = 10;
@@ -900,20 +930,27 @@ var visualization = function(){
         _nodes.forEach(function(n)
         {
             if(y > _mostRightY) _mostRightY = y;
-            if(n.verb == "response") y = 5;
+            //if(n.verb == "response") y = 5;
             else {
-                if (_yPerEvent[n.context.subphase] == undefined) {
+                var grouping = n.verb + n.context.subphase;
+                //var grouping = n.context.subphase;
+                //var grouping = n.verb;
+                //var grouping = n.object;
+                if (_yPerEvent[grouping] == undefined) {
                     y = _mostRightY;
                     y += ySpacing;
-                    _yPerEvent[n.context.subphase] = {};
-                    _yPerEvent[n.context.subphase].y = y;
-                    _yPerEvent[n.context.subphase].phase = n.context.phase;
-                    _yPerEvent[n.context.subphase].subphase = n.context.subphase;
+                    _yPerEvent[grouping] = {};
+
+                    _yPerEvent[grouping].title = grouping;
+                    _yPerEvent[grouping].y = y;
+                    _yPerEvent[grouping].phase = n.context.phase;
+                    _yPerEvent[grouping].subphase = n.context.subphase;
+                    _yPerEvent[grouping].verb = n.verb;
 
                     //x = 10;
                 }
                 else {
-                    y = _yPerEvent[n.context.subphase].y;
+                    y = _yPerEvent[grouping].y;
                 }
             }
             x += xSpacing;
@@ -986,7 +1023,8 @@ var loadVisualization = function() {
     //filter it
     var xf = crossfilter(__data);
     var byUser = xf.dimension(function(d){return d.username.toLowerCase();});
-
+    var byVerb = xf.dimension(function(d){return d.verb.toLowerCase();});
+    //byVerb.filterFunction(function(f){ return f != "rated"});
     __vis =  new visualization();
     __vis.init(byUser.top("Infinity"),"canvas1");
     var dock1 = new Dock();
@@ -998,5 +1036,9 @@ var loadVisualization = function() {
     var dock3 = new Dock();
     dock3.init(600,$(document).height()-200,300,200,"dock3", "0xCCfff3a2", dock3);
     __docks.push(dock3);
+    var dock4 = new Dock();
+    dock4.init(900,$(document).height()-200,300,200,"dock4", "0xCCff1313", dock4);
+    __docks.push(dock4);
+    __filterHandler.init(__docks);
 
 }
