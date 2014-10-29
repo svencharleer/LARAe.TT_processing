@@ -18,8 +18,10 @@ function loadData()
 
     if(debug == false)
         $.getJSON('/wespot/inquiries/getById/39569/', data_loading_done, "json");
-    else
-        $.getJSON('./data/offlineData.json', data_loading_done, "json");
+    else {
+
+        $.getJSON('./data/offlineData_W.json', data_loading_done, "json");
+    }
 }
 
 function data_loading_done(d)

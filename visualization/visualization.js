@@ -2,12 +2,171 @@
  * Created by svenc on 21/10/14.
  */
 
-var vis;
+var __vis;
+var __docks = [];
+
+var Dock = function() {
+    var _x, _y, _width, _height;
+    var _items = [];
+    var _id;
+    var _color;
+    var _self;
+    return{
+        "init" : function(x,y,widht,height,id, color, self)
+        {
+            _id = id;
+          _x = x;
+            _y = y;
+            _width = widht;
+            _height = height;
+            _color = color;
+            _self = self;
+        },
+        "update": function (touches) {
+            var copiesDocked_new = [];
+
+            _items.forEach(function (c) {
+                var touch = c.touched(touches);
+                //if touched, hand item over to the copy handler
+                if (touch == undefined) {
+                    copiesDocked_new.push(c);
+                }
+                else {
+                    c.docked(false);
+                    __copyHandler.handover(touch, c);
+
+                }
+
+
+            });
+            if(_items.length != copiesDocked_new.length)
+                __filterHandler.dockChanges(_id, copiesDocked_new, _self);
+            _items = copiesDocked_new;
+        },
+        "draw": function (processing) {
+            //draw dock
+            processing.rectMode(processing.CORNER);
+            processing.noStroke();
+            processing.fill(parseInt(_color));
+            processing.rect(_x, _y, _width, _height);
+
+
+            _items.forEach(function (c) {
+                c.draw();
+            });
+        },
+        "dock": function (item) {
+            item.docked(true);
+            _items.push(item);
+            //htmlDockController.addItem({id:"test", data:copiesToTouches[t].getData(),x:copiesToTouches[t].getCoordinates().x});
+            __filterHandler.dockChanges(_id, _items, _self);
+        },
+        "hit": function (item) {
+            if (item.getCoordinates().x > _x &&
+                item.getCoordinates().y > _y &&
+                item.getCoordinates().x < _x + _width &&
+                item.getCoordinates().y < _y + _height)
+                return true;
+            return false;
+
+
+        },
+        "id" : function()
+        {
+            return _id;
+        },
+        "getColor": function()
+        {
+            return _color;
+        }
+
+    }
+}
+
+var Filter = function(){ return{
+    "dock": {},
+    "users": [],
+    "phases": [],
+    "events": []};
+};
+
+var __filterHandler = function()
+{
+    var _filtersByDock = [];
+    var updateVisualization =  function()
+    {
+
+        //update the entire visualization with the filters we have
+        var items = __vis.getVisualizationItems();
+        //go through each dock, and highlight/filter the items
+        Object.keys(_filtersByDock).forEach(function(k){
+            var dock = _filtersByDock[k];
+            var xf = crossfilter(items);
+            //by users
+            var byUser = xf.dimension(function(d){return d.getData().username.toLowerCase();});
+            byUser.filterFunction(function(f){
+                var found = false;
+                //if the activity is by one of the users, it's part of the filtering!
+                dock.users.forEach(function(u){
+                    if(f == u.getData().id) {
+                        found = true;
+                        return true;
+                    }
+                });
+                return found;
+            })
+            //by phases
+            //by events
+
+            //undo previous highlighting of this color
+            items.forEach(function(d){
+                d.highlight(dock.dock.getColor(),false);
+            })
+            //now highlight the ones we found
+
+            byUser.top(Infinity).forEach(function(d){
+                d.highlight(dock.dock.getColor(),true);
+            })
+        });
+
+
+
+    }
+    return {
+        //when dock changes, it calls the filter handler
+        "dockChanges" : function(id, items,dock)
+        {
+
+            //remove old filter
+            delete _filtersByDock[id];
+            _filtersByDock[id] = undefined;
+            _filtersByDock[id] = new Filter();
+            _filtersByDock[id].dock = dock;
+            //get users
+            items.forEach(function(i){
+               switch(i.type())
+               {
+                   case "USER":
+
+                       _filtersByDock[id].users.push(i);
+                       break;
+                   default:
+                       console.log("we found an odd type to filter");
+               }
+            });
+            //get phases
+            //get events
+            console.log(_filtersByDock);
+            updateVisualization();
+        }
+
+    }
+}();
 
 
 var __copyHandler = function(){
     var copiesToTouches = {};
-    var copiesDocked = [];
+
     return {
         "updateTouchedCopies": function(touches)
         {
@@ -20,15 +179,15 @@ var __copyHandler = function(){
                 if(touch == undefined)
                 {
                     //2 cases. floating mid air, get rid of it. floating above a dock, dock!
-                    if(copiesToTouches[t].getCoordinates().y > $(document).height() - 270) {
-                        //docked!
-                        copiesToTouches[t].docked(true);
-                        copiesDocked.push(copiesToTouches[t]);
-                        htmlDockController.addItem({id:"test", data:copiesToTouches[t].getData(),x:copiesToTouches[t].getCoordinates().x});
-
-                    }
-                    else
-                        delete copiesToTouches[t];
+                    var hit = false;
+                    __docks.forEach(function(d){
+                        if(d.hit(copiesToTouches[t])) {
+                            d.dock(copiesToTouches[t]);
+                            hit = true;
+                            return;
+                        }
+                    });
+                    if(!hit) delete copiesToTouches[t];
                     copiesToTouches[t] = undefined;
 
                 }
@@ -41,26 +200,12 @@ var __copyHandler = function(){
 
 
         },
-        "updateDockedCopies": function(touches)
+        "handover":function(touch, copy)
         {
-            var copiesDocked_new = [];
 
-            copiesDocked.forEach(function(c){
-                var touch = c.touched(touches);
-                if(touch == undefined)
-                {
-                    copiesDocked_new.push(c);
-                }
-                else
-                {
-                    c.docked(false);
-                    copiesToTouches[touch] = c;
-                }
-
-
-            });
-            copiesDocked = copiesDocked_new;
+            copiesToTouches[touch.id] = copy;
         },
+
         "generateCopyFor": function(touch, copy) {
             //we're already touching this copy
             if(copiesToTouches[touch.id] != undefined)
@@ -72,49 +217,117 @@ var __copyHandler = function(){
         },
         "draw": function(processing)
         {
-            //draw dock
-            processing.rectMode(processing.CORNERS);
-            processing.noStroke();
-            processing.fill(0xCC323232);
-            processing.rect(0, $(document).height()-270, $(document).width(), $(document).height());
 
             Object.keys(copiesToTouches).forEach(function(c){
                 if( copiesToTouches[c] == undefined)
-                 return;
-               copiesToTouches[c].draw();
+                    return;
+                copiesToTouches[c].draw();
             });
-            copiesDocked.forEach(function(c){
-                c.draw();
-            });
+
         }
+
 
     }
 }();
 
 var UserToken = function(){
     var _data;
-    var _x, _y;
-    var _detached;
+    var _x, _y, _width, _height;
+
     var _processing;
+    var _pressed = false;
+    var _isCopy = false;
+    var _docked = false;
+    var _type = "USER"
     return {
         "init" : function(x,y,data,processing)
         {
           _data = data;
             _x = x;
             _y = y;
+            _width = 100;
+            _height = 10;
             _processing = processing;
         },
-        "detach" : function(b)
-        {
 
+        "update": function (touches, _self) {
+            //TODO: fix this, there must e a way to really empty a hash and then check if it's empty
+            if (touches == undefined) {
+                _pressed = false;
+                return;
+            }
+            var touch = _self.touched(touches);
+            if(touch != undefined)
+            {
+                _pressed = true;
+                if(!_isCopy && _pressed) {
+                    __copyHandler.generateCopyFor(touch, _self);
+                    return;
+                }
+                //it's a copy, move it around
+                _self.manual_updatePosition(touch.x, touch.y);
+            }
+            else
+            {
+                _pressed = false;
+            }
         },
-        "update" : function()
-        {
+        "touched": function(touches){
+            var found = undefined;
+
+            Object.keys(touches).forEach(function (t) {
+                if (touches[t] == undefined) return;
+                //check if mouse isn't clicked in item
+                var touch = touches[t];
+                if (touch.x > _x &&
+                    touch.y > _y -10&&
+                   touch.x < _x + _width &&
+                    touch.y < _y -10 + _height) {
+                    found = touches[t];
+                    return true;
+                }
+                return false;
+            });
+            return found;
 
         },
         "draw"  :function()
         {
+            _processing.rectMode(_processing.CORNER);
+            _processing.noFill();
+            _processing.stroke(255);
+            _processing.rect(_x, _y-10, _width, _height);
+
+            _processing.fill(255);
             _processing.text(_data.user.name, _x, _y);
+        },
+        "manual_updatePosition": function (x, y) {
+            _x = x;
+            _y = y;
+        },
+        "isCopy": function(b){
+            _isCopy = b;
+        },
+        "copy": function () {
+            var c = new UserToken();
+            c.init(_x, _y, _data,_processing);
+            c.isCopy(true);
+            return c;
+        },
+        "docked":function(b)
+        {
+            _docked = b;
+        },
+        "getCoordinates": function () {
+            return {x: _x, y: _y};
+        },
+        "type" : function()
+        {
+            return _type;
+        },
+        "getData":function()
+        {
+            return _data;
         }
     }
 }
@@ -132,7 +345,7 @@ var __userHandler = function() {
                 //the data we get from users actually contains the key (facebook_.. ) + phases
                 //__users contains real user data. so we gotta put those together
                 var userData = __users[u.key] != undefined ? __users[u.key] : u.key;
-                var data = {user: userData, phases: u.value}
+                var data = {id: u.key, user: userData, phases: u.value}
                 user.init($(document).width()-200,i,data,processing);
                 _users.push(user);
                 i+=20;
@@ -142,7 +355,15 @@ var __userHandler = function() {
             _users.forEach(function(u){
                 u.draw();
             })
+       },
+       "update":function(touches)
+       {
+           _users.forEach(function(u){
+
+               u.update(touches,u);
+           });
        }
+
    }
 }();
 
@@ -156,6 +377,8 @@ var Circle = function(){
     var _pressed = false;
     var _isCopy = false;
     var _docked = false;
+    var _type = "EVENT";
+    var _highlight = {};
 
     var drawTriangle = function()
     {
@@ -200,6 +423,44 @@ var Circle = function(){
         _processing.endShape(_processing.CLOSE);
         _processing.popMatrix();
     };
+    var drawSquare = function()
+    {
+        //let's have a maximum of 4 docks for now
+        //draw a square with each quadrant the color of the dock if highlighted
+        var size = 2;
+        if(_pressed)
+            size = 4;
+        _processing.rectMode(_processing.CORNERS);
+        _processing.noStroke();
+        var i = 0;
+        Object.keys(_highlight).forEach(function(k){
+            if(_highlight[k] == true) {
+                _processing.fill(parseInt(k));
+            }
+            else
+            {
+                _processing.fill(255);
+            }
+                var x = _x + size * ((i % 2)+ 1);
+                var y = _y + size * ((parseInt(i / 2)) + 1);
+                _processing.rect(x, y, x + size, y+ size);
+
+
+            i++;
+        })
+
+        for(var j = i; j < 1;j++)
+        {
+            _processing.fill(255);
+            var x = _x + size * ((j % 2)) + ((j % 2)) * 2;
+            var y = _y + size * ((parseInt(j / 2))) + ((parseInt(j / 2))) * 2;
+            _processing.rect(x, y, x + size, y+ size);
+        }
+
+
+
+    }
+
     var drawDocked = function()
     {
         drawCircle();
@@ -269,6 +530,10 @@ var Circle = function(){
 
         },
         "draw": function () {
+            drawSquare();
+            return;
+
+
             if(_docked)
             {
                 drawDocked();
@@ -319,7 +584,16 @@ var Circle = function(){
 
         "debug":function(){
             console.log(_data);
+        },
+        "type" : function()
+        {
+            return _type;
+        },
+        "highlight" : function(color,b)
+        {
+            _highlight[color] = b;
         }
+
 
 
 
@@ -398,7 +672,7 @@ var visualization = function(){
 
     var setup = function () {
         var processing = Processing.getInstanceById(_canvas);
-        processing.size($(document).width(), $(document).height()-200, processing.JAVA2D);
+        processing.size($(document).width(), $(document).height(), processing.JAVA2D);
 
 
     };
@@ -413,7 +687,10 @@ var visualization = function(){
             d.update(_touches,d);
         });
         __copyHandler.updateTouchedCopies(_touches);
-        __copyHandler.updateDockedCopies(_touches);
+        __docks.forEach(function(d){
+            d.update(_touches);
+        })
+        __userHandler.update(_touches);
 
 
 
@@ -423,7 +700,7 @@ var visualization = function(){
 
 
         processing.pushMatrix();
-
+        if(_offset.x > 100) _offset.x = 100;
         processing.translate(_offset.x/_zoom, _offset.y/_zoom);
 
         //do updates within matrix transofmrations
@@ -473,8 +750,12 @@ var visualization = function(){
             drawPhaseHeader(_yPerEvent[y].phase, _yPerEvent[y].subphase, _yPerEvent[y].y, processing);
         });
         processing.popMatrix();
+       __docks.forEach(function(d){
+           d.draw(processing);
+       })
         __userHandler.draw();
         __copyHandler.draw(processing);
+
         drawLegends(processing);
         processing.smooth();
     };
@@ -533,9 +814,11 @@ var visualization = function(){
         switch(phase)
         {
             case 1:
+            case "1":
                 processing.fill(phaseColors[0]);
                 break;
             case 2:
+            case "2":
                 processing.fill(phaseColors[1]);
                 break;
             case "3":
@@ -543,12 +826,15 @@ var visualization = function(){
                 processing.fill(phaseColors[2]);
                 break;
             case 4:
+            case "4":
                 processing.fill(phaseColors[3]);
                 break;
             case 5:
+            case "5":
                 processing.fill(phaseColors[4]);
                 break;
             case 6:
+            case "6":
                 processing.fill(phaseColors[5]);
                 break;
             default:
@@ -564,7 +850,7 @@ var visualization = function(){
         setPhaseColor(phase,processing);
         processing.rectMode(processing.CORNERS);
         processing.noStroke();
-        processing.rect(0, y-10, 10, y+10);
+        processing.rect(0, y-10, 100, y+10);
         processing.fill(255);
         processing.text(subphase, 0, y)
     };
@@ -606,7 +892,7 @@ var visualization = function(){
 
 
 
-        var xSpacing = 20;
+        var xSpacing = 5;
         var ySpacing = 20;
 
         var x = 10;
@@ -616,18 +902,18 @@ var visualization = function(){
             if(y > _mostRightY) _mostRightY = y;
             if(n.verb == "response") y = 5;
             else {
-                if (_yPerEvent[n.object] == undefined) {
+                if (_yPerEvent[n.context.subphase] == undefined) {
                     y = _mostRightY;
                     y += ySpacing;
-                    _yPerEvent[n.object] = {};
-                    _yPerEvent[n.object].y = y;
-                    _yPerEvent[n.object].phase = n.context.phase;
-                    _yPerEvent[n.object].subphase = n.context.subphase;
+                    _yPerEvent[n.context.subphase] = {};
+                    _yPerEvent[n.context.subphase].y = y;
+                    _yPerEvent[n.context.subphase].phase = n.context.phase;
+                    _yPerEvent[n.context.subphase].subphase = n.context.subphase;
 
                     //x = 10;
                 }
                 else {
-                    y = _yPerEvent[n.object].y;
+                    y = _yPerEvent[n.context.subphase].y;
                 }
             }
             x += xSpacing;
@@ -684,10 +970,15 @@ var visualization = function(){
             if(_processing == undefined) return;
             _circles[0].manual_updatePosition(x,y);
             */
+        },
+        "getVisualizationItems" : function()
+        {
+            return _circles;
         }
     };
 
 }
+
 
 
 var loadVisualization = function() {
@@ -696,9 +987,16 @@ var loadVisualization = function() {
     var xf = crossfilter(__data);
     var byUser = xf.dimension(function(d){return d.username.toLowerCase();});
 
-    vis =  new visualization();
-    vis.init(byUser.top("Infinity"),"canvas1");
-   
+    __vis =  new visualization();
+    __vis.init(byUser.top("Infinity"),"canvas1");
+    var dock1 = new Dock();
+    dock1.init(0,$(document).height()-200,300,200,"dock1", "0xCC3ced6a", dock1);
+    __docks.push(dock1);
+    var dock2 = new Dock();
+    dock2.init(300,$(document).height()-200,300,200,"dock2", "0xCCff85f2", dock2);
+    __docks.push(dock2);
+    var dock3 = new Dock();
+    dock3.init(600,$(document).height()-200,300,200,"dock3", "0xCCfff3a2", dock3);
+    __docks.push(dock3);
 
-
-};
+}
