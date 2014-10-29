@@ -5,9 +5,156 @@
 var __vis;
 var __docks = [];
 
+var PhaseToken = function(){
+    var _phase;
+    var _color;
+    var _x, _y, _width, _height;
+
+    var _processing;
+    var _pressed = false;
+    var _isCopy = false;
+    var _docked = false;
+    var _type = "PHASE"
+    return {
+        "init" : function(x,y,phase, color, processing)
+        {
+            _phase = phase;
+            _color = color;
+            _x = x;
+            _y = y;
+            _width = 100;
+            _height = 10;
+            _processing = processing;
+        },
+
+        "update": function (touches, _self) {
+            //TODO: fix this, there must e a way to really empty a hash and then check if it's empty
+            if (touches == undefined) {
+                _pressed = false;
+                return;
+            }
+            var touch = _self.touched(touches);
+            if(touch != undefined)
+            {
+                _pressed = true;
+                if(!_isCopy && _pressed) {
+                    __copyHandler.generateCopyFor(touch, _self);
+                    return;
+                }
+                //it's a copy, move it around
+                _self.manual_updatePosition(touch.x, touch.y);
+            }
+            else
+            {
+                _pressed = false;
+            }
+        },
+        "touched": function(touches){
+            var found = undefined;
+
+            Object.keys(touches).forEach(function (t) {
+                if (touches[t] == undefined) return;
+                //check if mouse isn't clicked in item
+                var touch = touches[t];
+                if (touch.x > _x &&
+                    touch.y > _y -10&&
+                    touch.x < _x + _width &&
+                    touch.y < _y -10 + _height) {
+                    found = touches[t];
+                    return true;
+                }
+                return false;
+            });
+            return found;
+
+        },
+        "draw"  :function()
+        {
+            _processing.rectMode(_processing.CORNER);
+
+            _processing.fill(_color);
+            _processing.rect(_x, _y-12, _width, _height+2);
+
+            _processing.fill(255);
+            _processing.text("Phase " + _phase, _x, _y-10, _width,  _height+10);
+        },
+        "manual_updatePosition": function (x, y) {
+            _x = x;
+            _y = y;
+        },
+        "isCopy": function(b){
+            _isCopy = b;
+        },
+        "copy": function () {
+            var c = new PhaseToken();
+            c.init(_x, _y, _phase,_color,_processing);
+            c.isCopy(true);
+            return c;
+        },
+        "docked":function(b)
+        {
+            _docked = b;
+        },
+        "getCoordinates": function () {
+            return {x: _x, y: _y};
+        },
+        "type" : function()
+        {
+            return _type;
+        },
+        "getPhase":function()
+        {
+            return _phase;
+        }
+    }
+}
+
+var __phaseHandler = function()
+{
+    var _processing;
+    var _x;
+    var _y;
+    var _phases = [];
+
+    var phaseColors = [0xCC1c3341, 0xCC244153, 0xCC2c5169,0xCC345e79, 0xCC3e7091,0xCC4781a6];
+
+    return {
+        "init" : function(processing, x,y)
+        {
+            _x = x;
+            _y = y;
+            _processing = processing;
+            var i = 10;
+            for(var i = 0;i < 6;i++)
+            {
+                var phase = new PhaseToken();
+                phase.init( _x,i * 15 + _y,i+1,phaseColors[i], processing);
+                _phases.push(phase);
+
+            };
+        },
+        "draw" : function(){
+            _phases.forEach(function(u){
+                u.draw();
+            })
+
+        },
+        "update":function(touches)
+        {
+            _phases.forEach(function(u){
+
+                u.update(touches,u);
+            });
+
+        }
+
+    }
+}();
+
 var Dock = function() {
     var _x, _y, _width, _height;
     var _items = [];
+    var _relatedItems = [];
     var _id;
     var _color;
     var _self;
@@ -54,6 +201,11 @@ var Dock = function() {
             _items.forEach(function (c) {
                 c.draw();
             });
+            _relatedItems.forEach(function(r){
+                var color = (parseInt(_color) & 0xffffff) | (10 << 24);
+                processing.stroke(color);
+                processing.line(_x,_y, r.getScreenCoordinates().x, r.getScreenCoordinates().y);
+            });
         },
         "dock": function (item) {
             item.docked(true);
@@ -78,6 +230,10 @@ var Dock = function() {
         "getColor": function()
         {
             return _color;
+        },
+        "relatedItems" : function(items)
+        {
+            _relatedItems = items;
         }
 
     }
@@ -103,38 +259,66 @@ var __filterHandler = function()
             var dock = _filtersByDock[k];
             var xf = crossfilter(items);
             //by users
-            var byUser = xf.dimension(function(d){return d.getData().username.toLowerCase();});
-            byUser.filterFunction(function(f){
-                var found = false;
-                //if the activity is by one of the users, it's part of the filtering!
-                dock.users.forEach(function(u){
-                    if(f == u.getData().id) {
-                        found = true;
-                        return true;
-                    }
-                });
-                return found;
-            })
+            var byUser = xf.dimension(function (d) {
+                return d.getData().username.toLowerCase();
+            });
+            if(dock.users.length > 0) {
+
+
+                byUser.filterFunction(function (f) {
+                    var found = false;
+                    //if the activity is by one of the users, it's part of the filtering!
+                    dock.users.forEach(function (u) {
+                        if (f == u.getData().id) {
+                            found = true;
+                            return true;
+                        }
+                    });
+                    return found;
+                })
+            }
             //by phases
+
+            var byPhases = xf.dimension(function(d){return parseInt(d.getData().context.phase);});
+            if(dock.phases.length > 0) {
+                byPhases.filterFunction(function (f) {
+                    var found = false;
+                    //if the activity is by one of the users, it's part of the filtering!
+                    dock.phases.forEach(function (u) {
+                        if (f == u.getPhase()) {
+                            found = true;
+                            return true;
+                        }
+                    });
+                    return found;
+                })
+            }
+
             //by events
 
             //undo previous highlighting of this color
-            if(byUser.top(Infinity) > 0) {
+            if(dock.users.length > 0 || dock.phases.length > 0) {
                 items.forEach(function (d) {
                     d.highlight(dock.dock.getColor(), 0);
                 })
+
             }
             else
             {
                 items.forEach(function (d) {
                     d.highlight(dock.dock.getColor(), 1);
                 })
+               return;
+
             }
             //now highlight the ones we found
 
             byUser.top(Infinity).forEach(function(d){
                 d.highlight(dock.dock.getColor(),2);
             })
+
+            //hand them to the dock, if we wanna do more fancy stuff with them
+            dock.dock.relatedItems(byUser.top(Infinity));
         });
 
 
@@ -157,6 +341,10 @@ var __filterHandler = function()
                    case "USER":
 
                        _filtersByDock[id].users.push(i);
+                       break;
+                   case "PHASE":
+
+                       _filtersByDock[id].phases.push(i);
                        break;
                    default:
                        console.log("we found an odd type to filter");
@@ -311,10 +499,10 @@ var UserToken = function(){
             _processing.rectMode(_processing.CORNER);
             _processing.noFill();
             _processing.stroke(255);
-            _processing.rect(_x, _y-10, _width, _height);
+            _processing.rect(_x, _y-12, _width, _height+2);
 
             _processing.fill(255);
-            _processing.text(_data.user.name, _x, _y);
+            _processing.text(_data.total + " " + _data.user.name, _x, _y-10, _width,  _height+10);
         },
         "manual_updatePosition": function (x, y) {
             _x = x;
@@ -350,9 +538,14 @@ var UserToken = function(){
 var __userHandler = function() {
     var _users = [];
     var _processing;
+    var _x;
+    var _y;
+    var _offset = 0;
    return {
-       "init" : function(users,processing)
+       "init" : function(users,processing, x,y)
        {
+           _x = x;
+           _y = y;
            _processing = processing;
            var i = 10;
             users.forEach(function(u){
@@ -362,16 +555,22 @@ var __userHandler = function() {
                 var userData = __users[u.key] != undefined ? __users[u.key] : undefined;
                 if(userData == undefined) return;
 
-                var data = {id: u.key, user: userData, phases: u.value}
-                user.init($(document).width()-200,i,data,processing);
+                var data = {id: u.key, user: userData, phases: u.value.countByPhase, total: u.value.total}
+                user.init(parseInt(i/10) * 120 + _x,(i%10) * 15 + _y,data,processing);
                 _users.push(user);
-                i+=20;
+                i++;
             });
        },
        "draw" : function(){
+
+
+
+
+
             _users.forEach(function(u){
                 u.draw();
             })
+
        },
        "update":function(touches)
        {
@@ -379,6 +578,7 @@ var __userHandler = function() {
 
                u.update(touches,u);
            });
+
        }
 
    }
@@ -388,6 +588,7 @@ var __userHandler = function() {
 var Circle = function(){
 
     var _x,_y;
+    var _screenX, _screenY;
 
     var _data;
     var _processing;
@@ -460,7 +661,7 @@ var Circle = function(){
                 var color = (parseInt(k) & 0xffffff) | (parseInt(pulseTransformed * 255) << 24);
                 _processing.fill(color);
             }
-            else if(_highlight[k] == 1) {
+            else if(_highlight[k] == 0) {
                 _processing.fill(128);
             }
             else
@@ -522,7 +723,7 @@ var Circle = function(){
                 var mouseDist = _processing.dist(_processing.screenX(_x,_y), _processing.screenY(_x,_y), touch.x, touch.y);
                 if (mouseDist < 5) {
                     _pressed = true;
-
+                    console.log(_data);
                 }
                 else {
                     _pressed = false;
@@ -540,6 +741,10 @@ var Circle = function(){
             //update pulsing
             _pulse = (_pulse + 1) % 180;
 
+            //update screen coordindates
+            _screenX = _processing.screenX(_x,_y);
+            _screenY = _processing.screenY(_x,_y)
+
 
         },
         "touched": function(touches){
@@ -555,6 +760,7 @@ var Circle = function(){
                     return false; //break out of foreach
                 }
             });
+
             return found;
 
         },
@@ -583,6 +789,9 @@ var Circle = function(){
         },
         "getCoordinates": function () {
             return {x: _x, y: _y};
+        },
+        "getScreenCoordinates": function () {
+            return {x: _screenX, y: _screenY};
         },
         "getPhase": function () {
             return _data.context.phase;
@@ -665,13 +874,16 @@ var visualization = function(){
             function(p,v){
                 if(p.countByPhase[v.context.phase] == undefined)
                     p.countByPhase[v.context.phase] = 0;
-                p.countByPhase[v.context.phase]++;return p;
+                p.countByPhase[v.context.phase]++;
+                p.total++;
+                return p;
 
             },
             function(p,v){
+                p.total--;
                 p.countByPhase[v.context.phase]--;return p;},
-            function(){return {countByPhase:{}};}
-        ).top(Infinity);
+            function(){return {countByPhase:{}, total:0};}
+        ).order(function(o){return o.total}).top(Infinity);
     }
 
 //GLOBAL VARS
@@ -721,7 +933,7 @@ var visualization = function(){
             d.update(_touches);
         })
         __userHandler.update(_touches);
-
+        __phaseHandler.update(_touches);
 
 
         //drawing
@@ -731,7 +943,7 @@ var visualization = function(){
 
         processing.pushMatrix();
         if(_offset.x > 100) _offset.x = 100;
-        //processing.translate(_offset.x/_zoom, _offset.y/_zoom);
+        processing.translate(_offset.x/_zoom, _offset.y/_zoom);
 
         //do updates within matrix transofmrations
         _circles.forEach(function(d)
@@ -774,7 +986,7 @@ var visualization = function(){
         processing.popMatrix();
         processing.pushMatrix();
 
-        //processing.translate(0, _offset.y/_zoom);
+        processing.translate(0, _offset.y/_zoom);
         Object.keys(_yPerEvent).forEach(function(y){
 
             drawPhaseHeader(_yPerEvent[y].phase, _yPerEvent[y].title, _yPerEvent[y].y, processing);
@@ -786,7 +998,7 @@ var visualization = function(){
         __userHandler.draw();
         __copyHandler.draw(processing);
 
-        drawLegends(processing);
+        __phaseHandler.draw();
         processing.smooth();
     };
 
@@ -801,14 +1013,17 @@ var visualization = function(){
             processing.draw = draw;
             // mouse event
             processing.mousePressed = function () {
-              _pOffset = _offset;
+              if(processing.mouseY < $(document).height()-400)
+                _pOffset = _offset;
               _touches["mouse"] = {id: "mouse", x: processing.pmouseX, y: processing.pmouseY};
 
             };
             processing.mouseDragged = function () {
 
-                _offset.x = (processing.mouseX - processing.pmouseX) + _pOffset.x;
-                _offset.y = (processing.mouseY - processing.pmouseY) + _pOffset.y;
+                if(processing.mouseY < $(document).height()-400) {
+                    _offset.x = (processing.mouseX - processing.pmouseX) + _pOffset.x;
+                    _offset.y = (processing.mouseY - processing.pmouseY) + _pOffset.y;
+                }
                 _touches["mouse"] = {id: "mouse", x: processing.mouseX, y: processing.mouseY};
 
             };
@@ -896,23 +1111,7 @@ var visualization = function(){
 
     }
 
-    var drawLegends = function(processing)
-    {
-        processing.rectMode(processing.CORNERS);
-        processing.noStroke();
-        processing.fill(255);
-        processing.text("phase", 10,20);
 
-        for(var i = 0;i < 6;i++)
-        {
-            processing.fill(phaseColors[i])
-            processing.rect(50+i*20 , 10, 70+i*20, 20);
-            processing.fill(255);
-            processing.text(i+1, 50+i*20,20);
-        }
-
-
-    }
 
 
 
@@ -931,11 +1130,13 @@ var visualization = function(){
         {
             if(y > _mostRightY) _mostRightY = y;
             //if(n.verb == "response") y = 5;
-            else {
-                var grouping = n.verb + n.context.subphase;
-                //var grouping = n.context.subphase;
+            //else
+            {
+                //var grouping = n.verb + n.context.phase + n.context.subphase;
+                var grouping = n.context.subphase;
                 //var grouping = n.verb;
                 //var grouping = n.object;
+                //var grouping = parseInt(n.context.phase);
                 if (_yPerEvent[grouping] == undefined) {
                     y = _mostRightY;
                     y += ySpacing;
@@ -943,7 +1144,7 @@ var visualization = function(){
 
                     _yPerEvent[grouping].title = grouping;
                     _yPerEvent[grouping].y = y;
-                    _yPerEvent[grouping].phase = n.context.phase;
+                    _yPerEvent[grouping].phase = parseInt(n.context.phase);
                     _yPerEvent[grouping].subphase = n.context.subphase;
                     _yPerEvent[grouping].verb = n.verb;
 
@@ -995,8 +1196,8 @@ var visualization = function(){
             createCircles(processing);
             createPhases();
             //linkUsersToCircles();
-            __userHandler.init(_users,processing);
-
+            __userHandler.init(_users,processing, $(document).width() - 800, $(document).height() - 170);
+            __phaseHandler.init(processing, $(document).width() - 900, $(document).height() - 170);
 
 
         }
@@ -1028,17 +1229,18 @@ var loadVisualization = function() {
     __vis =  new visualization();
     __vis.init(byUser.top("Infinity"),"canvas1");
     var dock1 = new Dock();
-    dock1.init(0,$(document).height()-200,300,200,"dock1", "0xCC3ced6a", dock1);
+    dock1.init(0,$(document).height()-200,300,100,"dock1", "0xCC3ced6a", dock1);
     __docks.push(dock1);
     var dock2 = new Dock();
-    dock2.init(300,$(document).height()-200,300,200,"dock2", "0xCCff85f2", dock2);
+    dock2.init(300,$(document).height()-200,300,100,"dock2", "0xCCff85f2", dock2);
     __docks.push(dock2);
     var dock3 = new Dock();
-    dock3.init(600,$(document).height()-200,300,200,"dock3", "0xCCfff3a2", dock3);
+    dock3.init(0,$(document).height()-100,300,100,"dock3", "0xCCfff3a2", dock3);
     __docks.push(dock3);
     var dock4 = new Dock();
-    dock4.init(900,$(document).height()-200,300,200,"dock4", "0xCCff1313", dock4);
+    dock4.init(300,$(document).height()-100,300,100,"dock4", "0xCCff1313", dock4);
     __docks.push(dock4);
     __filterHandler.init(__docks);
+
 
 }
