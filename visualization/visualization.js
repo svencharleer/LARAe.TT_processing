@@ -24,7 +24,7 @@ var DataVisualization = function() {
                 _color = color;
                 _x = x;
                 _y = y;
-                _width = 100;
+                _width = 70;
                 _height = 10;
                 _processing = processing;
             },
@@ -518,7 +518,7 @@ var DataVisualization = function() {
                 _x = x;
                 _y = y;
                 _processing = processing;
-                var i = 10;
+                var i = 0;
                 users.forEach(function (u) {
                     var user = new UserToken();
                     //the data we get from users actually contains the key (facebook_.. ) + phases
@@ -527,7 +527,7 @@ var DataVisualization = function() {
                     if (userData == undefined) return;
 
                     var data = {id: u.key, user: userData, phases: u.value.countByPhase, total: u.value.total}
-                    user.init(parseInt(i / 10) * 120 + _x, (i % 10) * 15 + _y, data, processing);
+                    user.init(parseInt(i / 13) * 120 + _x, (i % 13) * 15 + _y, data, processing);
                     _users.push(user);
                     i++;
                 });
@@ -890,6 +890,8 @@ var DataVisualization = function() {
         var _mostRightY = 0;
         var _highestX = 0;
 
+        var _debugCursors = [];
+
 //METHODS
 
 
@@ -908,7 +910,7 @@ var DataVisualization = function() {
                 processing.rotate(Math.PI);
                 processing.translate(-$("#" + __canvas).width(),-$("#" + __canvas).height())
             }
-            processing.background(0);
+            processing.background(0xCC2b2b2b);
             //updating
             _circles.forEach(function (d) {
                 d.update(_touches, d);
@@ -976,6 +978,17 @@ var DataVisualization = function() {
             __copyHandler.draw(processing);
 
             __phaseHandler.draw();
+
+            //debug draw cursors
+            Object.keys(_debugCursors).forEach(function(c)
+            {
+                if(_debugCursors[c] != undefined)
+                {
+                    processing.fill(0,255,0);
+                    processing.ellipse(_debugCursors[c].x, _debugCursors[c].y, 10, 10);
+                }
+            });
+
             processing.smooth();
         };
 
@@ -989,22 +1002,22 @@ var DataVisualization = function() {
                 processing.draw = draw;
                 // mouse event
                 processing.mousePressed = function () {
-                    if (processing.mouseY < $("#" + __canvas).height() - 400)
-                        _pOffset = _offset;
+                    /*if (processing.mouseY < $("#" + __canvas).height() - 400)
+                        _pOffset = _offset;*/
                     _touches["mouse"] = {id: "mouse", x: processing.pmouseX, y: processing.pmouseY};
 
                 };
                 processing.mouseDragged = function () {
 
-                    if (processing.mouseY < $("#" + __canvas).height() - 400) {
+                    /*if (processing.mouseY < $("#" + __canvas).height() - 400) {
                         _offset.x = (processing.mouseX - processing.pmouseX) + _pOffset.x;
                         _offset.y = (processing.mouseY - processing.pmouseY) + _pOffset.y;
-                    }
+                    }*/
                     _touches["mouse"] = {id: "mouse", x: processing.mouseX, y: processing.mouseY};
 
                 };
                 processing.mouseReleased = function () {
-                    _pOffset = undefined;
+                   /* _pOffset = undefined;*/
                     _touches["mouse"] = undefined;
                 }
                 /*processing.touchStart = function(touchEvent)
@@ -1163,20 +1176,62 @@ var DataVisualization = function() {
                 createCircles(processing);
                 createPhases();
                 //linkUsersToCircles();
-                __userHandler.init(_users, processing, $("#" + __canvas).width() - 800, $("#" + __canvas).height() - 170);
-                __phaseHandler.init(processing, $("#" + __canvas).width() - 900, $("#" + __canvas).height() - 170);
+                __userHandler.init(_users, processing, 280, $("#" + __canvas).height() - 170);
+                __phaseHandler.init(processing, 200, $("#" + __canvas).height() - 170);
 
 
             },
-            "drawCursor": function (x, y) {
-                /* var _processing = Processing.getInstanceById("canvas1");
-                 if(_processing == undefined) return;
-                 _circles[0].manual_updatePosition(x,y);
-                 */
+            "addTouch": function (id, x, y) {
+
+                //if flipped, we need to convert x and y
+                if(_flipped)
+                {
+                    x = $("#" + _canvas).width() - x;
+                    y = $("#" + _canvas).height() - y;
+
+                }
+
+                _pOffset = _offset;
+
+                _debugCursors[id] = {id:id,x:x,y:y};
+                _touches[id] = {id:id,x:x,y:y, startx:x, starty:y};
+                console.log("adding touch");
+
+            },
+            "updateTouch": function (id, x, y) {
+
+                //if flipped, we need to convert x and y
+                if(_flipped)
+                {
+                    x = $("#" + _canvas).width() - x;
+                    y = $("#" + _canvas).height() - y;
+
+                }
+
+                _debugCursors[id] = {id:id,x:x,y:y};
+                if(_touches[id] == undefined) return;
+                _touches[id].x = x;
+                _touches[id].y = y;
+
+                 if(y < 200 || (_flipped && y < $("#" + _canvas).height() - 200)) {
+                     _offset.x = (_touches[id].x - _touches[id].startx);// + _pOffset.x;
+                     _offset.y = (_touches[id].y - _touches[id].starty);// + _pOffset.y;
+                 }
+
+            },
+            "removeTouch" :function (id, x, y) {
+
+                _debugCursors[id] = undefined;
+                _touches[id] = undefined;
+
+                _pOffset = undefined
+
             },
             "getVisualizationItems": function () {
                 return _circles;
             }
+
+
         };
 
     }
@@ -1185,7 +1240,7 @@ var DataVisualization = function() {
 
     return {
 
-        "loadVisualization" : function (canvas, flipped) {
+        "loadVisualization" : function (canvas, flipped, dockColor1, dockColor2) {
 
             __canvas = canvas;
             //filter it
@@ -1200,10 +1255,10 @@ var DataVisualization = function() {
             __vis = new visualization();
             __vis.init(byUser.top("Infinity"), canvas, flipped);
             var dock1 = new Dock();
-            dock1.init(0, $("#" + __canvas).height() - 100, 300, 100, "dock1", "0xCC00deff", dock1);
+            dock1.init(0, $("#" + __canvas).height() - 200, 150, 100, "dock1", dockColor1, dock1);
             __docks.push(dock1);
             var dock2 = new Dock();
-            dock2.init(300, $("#" + __canvas).height() - 100, 300, 100, "dock2", "0xCCff03f0", dock2);
+            dock2.init(0, $("#" + __canvas).height() - 100, 150, 100, "dock2", dockColor2, dock2);
             __docks.push(dock2);
             /* var dock3 = new Dock();
              dock3.init(0,$("#" + __canvas).height()-100,300,100,"dock3", "0xCCfff3a2", dock3);
@@ -1214,6 +1269,21 @@ var DataVisualization = function() {
             __filterHandler.init(__docks);
 
 
+        },
+        "addTouch": function (id, x, y) {
+
+
+            __vis.addTouch(id,x,y);
+        },
+        "updateTouch": function (id, x, y) {
+
+
+            __vis.updateTouch(id,x,y);
+        },
+        "removeTouch": function (id) {
+
+
+            __vis.removeTouch(id);
         }
     }
 
