@@ -200,7 +200,7 @@ var DataVisualization = function() {
                     c.draw();
                 });
                 _relatedItems.forEach(function (r) {
-                    var color = (parseInt(_color) & 0xffffff) | (10 << 24);
+                    var color = (parseInt(_color) & 0xffffff) | (24 << 24);
                     processing.stroke(color);
                     processing.line(_x, _y, r.getScreenCoordinates().x, r.getScreenCoordinates().y);
                 });
@@ -353,6 +353,7 @@ var DataVisualization = function() {
                 else {
                     items.forEach(function (d) {
                         d.highlight(dock.dock.getColor(), 1);
+                        dock.dock.relatedItems([]);
                     })
                     return;
 
@@ -902,19 +903,25 @@ var DataVisualization = function() {
                     if (touches[t] == undefined) return;
                     //check if mouse isn't clicked in item
                     var touch = touches[t];
-                    var mouseDist;
-                    if(_docked)
-                    {
 
-                        mouseDist = _processing.dist(_x, _y, touch.x, touch.y);
+                    var x,y;
+                    if(_docked) {
+                        x = _x;
+                        y = _y;
                     }
                     else {
-                        mouseDist = _processing.dist(_processing.screenX(_x, _y), _processing.screenY(_x, _y), touch.x, touch.y);
+                        x = _processing.screenX(_x, _y);
+                        y = _processing.screenY(_x, _y);
                     }
-                    if (mouseDist < 5) {
+                    if (touch.x > x &&
+                        touch.y > y  &&
+                        touch.x < x + 30 &&
+                        touch.y < y + 20) {
                         found = touches[t];
-                        return false; //break out of foreach
+                        return true;
                     }
+                    return false;
+
                 });
 
                 return found;
