@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, user-scalable=no">
+    <link rel="stylesheet" href="style.css">
+    <script type="application/javascript" src="bower_components/jquery/dist/jquery.js"></script>
+    <script type="application/javascript" src="bower_components/crossfilter/crossfilter.js"></script>
+
+
+    <script type="application/javascript" src="bower_components/Processing.js/processing.js"></script>
+    <script type="application/javascript" src="http://localhost:5000/libs/socket.io.js"></script>
+    <script type="application/javascript" src="bower_components/lodash/dist/lodash.js"></script>
+
+    <script type="application/javascript" src="3rdparty/Tuio.js"></script>
+
+
+    <script type="application/javascript" src="data/load.js"></script>
+    <script type="application/javascript" src="visualization/htmlDockController.js"></script>
+    <script type="application/javascript" src="visualization/visualization.js"></script>
+
+    <script src="http://mistral.local:5555/socket.io/socket.io.js"></script>
+
+
+
+    <script type="application/javascript">
+        //INTERPRET DATA STUFF
+        function getTitleAndBody(rawEvent)
+        {
+            var html = "";
+            try {
+                event.originalRequest = rawEvent.originalrequest;// JSON.parse(rawEvent.originalrequest)
+
+                if(rawEvent.verb == "response") //ARLearn
+                {
+                    if(rawEvent.originalrequest.responseValue.imageUrl != undefined)
+                    {
+                        html = __users[rawEvent.username.toLowerCase()].name;
+                        html += "<img src='" + rawEvent.originalrequest.responseValue.imageUrl.replace(/\\/g, "") + "'></img>";
+
+                    }
+                    if(rawEvent.originalrequest.responseValue.audioUrl != undefined)
+                    {
+                        html = __users[rawEvent.username.toLowerCase()].name;
+                        html += "<audio controls> <source src='" + rawEvent.originalrequest.responseValue.audioUrl.replace(/\\/g, "") + "'> Your browser does not support the audio tag.</audio>";
+                        html += "<br/>[<a  target='_blank' href='" + rawEvent.originalrequest.responseValue.audioUrl.replace(/\\/g, "") + "'>source</a>]";
+
+                    }    //
+                    if(rawEvent.originalrequest.responseValue.videoUrl != undefined)
+                    {
+                        html = __users[rawEvent.username.toLowerCase()].name;
+                        html += "<video controls> <source src='" + rawEvent.originalrequest.responseValue.videoUrl.replace(/\\/g, "") + "' type='video/mp4'> Your browser does not support the video tag.</video>";
+                        html += "<br/>[<a  target='_blank' href='" + rawEvent.originalrequest.responseValue.videoUrl.replace(/\\/g, "") + "'>source</a>]";
+
+                    }
+                    if(rawEvent.originalrequest.responseValue.text != undefined)
+                    {
+                        html = __users[rawEvent.username.toLowerCase()].name;
+                        html += rawEvent.originalrequest.responseValue.text;
+
+                    }
+
+                    return html;
+                }
+                if(rawEvent.verb == "rated") //ELGG
+                {
+                    html = __users[rawEvent.username.toLowerCase()].name + " rated with " +rawEvent.originalrequest.value;
+                    return html;
+                }
+                if(rawEvent.verb == "like") //ELGG
+                {
+                   html = __users[rawEvent.username.toLowerCase()].name + " liked";
+                    return html;
+                }
+                if(rawEvent.verb == "comment"
+                        || rawEvent.verb == "create" || rawEvent.verb == "reply" || rawEvent.verb == "answer")
+
+                {
+
+                    var htmlTitle = "";
+                    var htmlData = "";
+                    if(rawEvent.originalrequest.value && rawEvent.originalrequest.value.title != undefined)
+                    {
+                        htmlTitle =  "<strong>" + rawEvent.originalrequest.value.title + "</strong><br/>"
+
+                    }
+                    if(rawEvent.originalrequest.value && rawEvent.originalrequest.value.description != undefined)
+                    {
+
+                        htmlData = ""+rawEvent.originalrequest.value.description  + ""
+                    }
+                    else
+                    {
+                        htmlData = rawEvent.originalrequest.value;
+                    }
+                    html =  htmlTitle + "<span class='thread_subtitle phase"+ rawEvent.context.phase+ "''>" + __users[rawEvent.username.toLowerCase()].name + " [" + rawEvent.context.subphase + "]</span>"+ htmlData + "";
+                    return html;
+                }
+
+
+            }
+            catch (exc) {
+                console.log(exc.toString());
+                console.log(JSON.stringify(rawEvent));
+                //console.log(rawEvent.originalrequest.toString());
+                return "";
+            }
+        }
+
+
+        //MAIN STUFF
+        var loadShared = function() {
+            var ___socket_LARA;
+            var __data = {};
+            var __items = {};
+            console.log("fetching data");
+            ___socket_LARA = io.connect("http://mistral.local:5555")
+            ___socket_LARA.emit("register");
+            ___socket_LARA.on("fetchObjects", function (msg) {
+                console.log("updated");
+                __data = msg;
+                Object.keys(__items).forEach(function (k) {
+                    __items[k].remove = true;
+                })
+
+                Object.keys(__data).forEach(function (d) {
+                    __items[d] = {item: __data[d].data, remove: false, x: __data[d].x};
+                    if ($("#" + __data[d].data.event_id).length == 0) {
+
+                        console.log(__data[d]);
+                        //return;
+                        var div = document.createElement("div");
+                        $("#items").append("<div id=" + __data[d].data.event_id + ">");
+                        $("#" + __data[d].data.event_id).attr("id", __data[d].data.event_id)
+                                .attr("style", "position:absolute;top:10px;left:" + __data[d].x + "px;color:white;background-color:#7D7D7D;border-left:solid 1px black; border-right:solid 1px black;display:inline-block;width:200px;padding:5px;margin:0;height:100%")
+                                .html(getTitleAndBody(__data[d].data));
+                        //.html("<strong>" + __data[d].data.originalrequest.value.title + "</strong><br/>" + __data[d].data.originalrequest.value.description);
+                        console.log(__data[d].x);
+                    }
+                })
+                Object.keys(__items).forEach(function (k) {
+                    if (__items[k].remove) {
+                        $("#" + __items[k].item.event_id).remove();
+                    }
+                })
+
+            });
+        }
+
+
+
+    </script>
+
+    <title>LARAe.TT</title>
+</head>
+<body id="main" style="padding:0;margin:0;font-size:10px;"  onload="javascript:load(loadShared)">
+<div id="items">
+
+</div>
+
+<!-- <div id="docking" style="width:100%;height:200px;border:solid 1px black"></div> -->
+
+<script type="application/javascript">
+
+
+</script>
+</body>
+</html>

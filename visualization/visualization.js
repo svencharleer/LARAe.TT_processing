@@ -10,6 +10,7 @@ var DataVisualization = function() {
 
     var PhaseToken = function () {
         var _phase;
+        var _verb
         var _color;
         var _x, _y, _width, _height;
 
@@ -19,8 +20,8 @@ var DataVisualization = function() {
         var _docked = false;
         var _type = "PHASE"
         return {
-            "init": function (x, y, phase, color, processing) {
-                _phase = phase;
+            "init": function (x, y, verb, color, processing) {
+                _verb = verb;
                 _color = color;
                 _x = x;
                 _y = y;
@@ -71,11 +72,13 @@ var DataVisualization = function() {
             "draw": function () {
                 _processing.rectMode(_processing.CORNER);
 
-                _processing.fill(_color);
+                _processing.noFill();
+                _processing.stroke(_color);
                 _processing.rect(_x, _y - 12, _width, _height + 2);
 
                 _processing.fill(255);
-                _processing.text("Phase " + _phase, _x, _y - 10, _width, _height + 10);
+                _processing.text( _verb.key, _x, _y - 10, _width, _height + 10);
+
             },
             "manual_updatePosition": function (x, y) {
                 _x = x;
@@ -100,7 +103,7 @@ var DataVisualization = function() {
                 return _type;
             },
             "getPhase": function () {
-                return _phase;
+                return _verb;
             }
         }
     }
@@ -119,12 +122,13 @@ var DataVisualization = function() {
                 _y = y;
                 _processing = processing;
                 var i = 10;
-                for (var i = 0; i < 6; i++) {
+                __verbs.forEach(function(v){
                     var phase = new PhaseToken();
-                    phase.init(_x, i * 15 + _y, i + 1, phaseColors[i], processing);
+                    phase.init(_x, i * 15 + _y, v, phaseColors[i], processing);
                     _phases.push(phase);
+                    i++;
 
-                }
+                })
                 ;
             },
             "draw": function () {
@@ -178,8 +182,10 @@ var DataVisualization = function() {
 
 
                 });
-                if (_items.length != copiesDocked_new.length)
+                if (_items.length != copiesDocked_new.length) {
                     __filterHandler.dockChanges(_id, copiesDocked_new, _self);
+                    __dataHandler.dockUpdated(_id, copiesDocked_new);
+                }
                 _items = copiesDocked_new;
             },
             "draw": function (processing) {
@@ -204,6 +210,7 @@ var DataVisualization = function() {
                 _items.push(item);
                 //htmlDockController.addItem({id:"test", data:copiesToTouches[t].getData(),x:copiesToTouches[t].getCoordinates().x});
                 __filterHandler.dockChanges(_id, _items, _self);
+                __dataHandler.dockUpdated(_id,_items);
             },
             "hit": function (item) {
                 if (item.getCoordinates().x > _x &&
@@ -227,6 +234,56 @@ var DataVisualization = function() {
 
         }
     }
+
+    var __dataHandler = function(){
+        var _dataDock;
+        var _items = {};
+        return {
+            "dockUpdated" : function(id, items){
+
+                if(_dataDock.id() != id) return;
+                //set all to delete first
+                Object.keys(_items).forEach(function(i){
+                    if(_items[i] != undefined)_items[i].remove = true;
+                });
+                //add new items
+                var itemsToAdd = [];
+                items.forEach(function(i){
+                    if(_items[i.getData().event_id] == undefined)
+                    {
+                        _items[i.getData().event_id] = {item: i, remove:false};
+                        itemsToAdd.push({data:i.getData(),x: i.getCoordinates().x - $("#docking").offset().left});
+                    }
+                    else
+                        _items[i.getData().event_id].remove = false; //it's already there, so we want to keep it
+                        //also no need to end them again
+                })
+                //remove old items
+                var itemsToRemove = [];
+                Object.keys(_items).forEach(function(i){
+                    if(_items[i] == undefined) return;
+                    var ii = _items[i].item;
+                    if(_items[ii.getData().event_id] != undefined && _items[ii.getData().event_id].remove)
+                    {
+
+                        itemsToRemove.push(ii.getData());
+                        _items[ii.getData().event_id] = undefined;
+                    }
+                });
+                ___socket_LARA.emit("addObjects", {canvas: __canvas, objects:itemsToAdd});
+                ___socket_LARA.emit("removeObjects", {canvas: __canvas, objects:itemsToRemove});
+                console.log("in");
+                console.log(items);
+                console.log("out");
+                console.log(_items);
+
+            },
+            "init" : function(dataDock)
+            {
+                _dataDock = dataDock;
+            }
+        }
+    }();
 
     var Filter = function () {
         return{
@@ -315,6 +372,9 @@ var DataVisualization = function() {
         return {
             //when dock changes, it calls the filter handler
             "dockChanges": function (id, items, dock) {
+                //if it's not part of the docks we got init'd with, ignore (like data dock)
+                if(Object.keys(_filtersByDock).indexOf(id) < 0)
+                    return;
 
                 //remove old filter
                 delete _filtersByDock[id];
@@ -367,19 +427,27 @@ var DataVisualization = function() {
                         //2 cases. floating mid air, get rid of it. floating above a dock, dock!
                         var hit = false;
                         __docks.forEach(function (d) {
+                            //console.log(d);
                             if (d.hit(copiesToTouches[t])) {
                                 d.dock(copiesToTouches[t]);
                                 hit = true;
                                 return;
                             }
                         });
+                        if(!hit && __dataDock.hit(copiesToTouches[t]))
+                        {
+                            __dataDock.dock(copiesToTouches[t]);
+                            hit = true;
+                        }
                         if (!hit) delete copiesToTouches[t];
                         copiesToTouches[t] = undefined;
 
                     }
-                    else
-                    //else we have to move it with the finger
+                    else {
+                        //else we have to move it with the finger
                         copiesToTouches[touch.id].manual_updatePosition(touch.x, touch.y);
+                        console.log("moving");
+                    }
                 });
 
 
@@ -387,6 +455,7 @@ var DataVisualization = function() {
             "handover": function (touch, copy) {
 
                 copiesToTouches[touch.id] = copy;
+
             },
 
             "generateCopyFor": function (touch, copy) {
@@ -415,6 +484,9 @@ var DataVisualization = function() {
     var UserToken = function () {
         var _data;
         var _x, _y, _width, _height;
+        var _screenX;
+        var _screenY;
+        var _rotation;
 
         var _processing;
         var _pressed = false;
@@ -422,13 +494,18 @@ var DataVisualization = function() {
         var _docked = false;
         var _type = "USER"
         return {
-            "init": function (x, y, data, processing) {
+            "init": function (x, y, data, processing, rotation) {
                 _data = data;
                 _x = x;
                 _y = y;
+                _rotation = rotation;
+
                 _width = 100;
                 _height = 10;
                 _processing = processing;
+
+                _screenX = _processing.screenX(_x, _y);
+                _screenY = _processing.screenY(_x, _y)
             },
 
             "update": function (touches, _self) {
@@ -454,30 +531,74 @@ var DataVisualization = function() {
             "touched": function (touches) {
                 var found = undefined;
 
+                var x,y;
+                if(_isCopy)
+                {
+                    x = _x;
+                    y = _y;
+
+                }
+                else{
+                    x = _screenX;
+                    y = _screenY;
+
+                }
+
                 Object.keys(touches).forEach(function (t) {
                     if (touches[t] == undefined) return;
                     //check if mouse isn't clicked in item
                     var touch = touches[t];
-                    if (touch.x > _x &&
-                        touch.y > _y - 10 &&
-                        touch.x < _x + _width &&
-                        touch.y < _y - 10 + _height) {
-                        found = touches[t];
-                        return true;
+                    if(_rotation == undefined)
+                    {
+                        if (touch.x > x &&
+                            touch.y > y - 10 &&
+                            touch.x < x + _width &&
+                            touch.y < y - 10 + _height) {
+                            found = touches[t];
+                            return true;
+                        }
+                        return false;
                     }
-                    return false;
+                    if(_rotation == "left")
+                    {
+                        if (touch.x > x &&
+                            touch.y > y &&
+                            touch.x < x  + _height &&
+                            touch.y < y  + _width) {
+                            found = touches[t];
+                            return true;
+                        }
+                        return false;
+                    }
+                    if(_rotation == "right")
+                    {
+                        if (touch.x > x - _height &&
+                            touch.y < y &&
+                            touch.x < x  &&
+                            touch.y > y  - _width) {
+                            found = touches[t];
+                            return true;
+                        }
+                        return false;
+                    }
                 });
                 return found;
 
             },
             "draw": function () {
+                _processing.pushMatrix();
+
+
+                _processing.translate(_x, _y -12);
+
                 _processing.rectMode(_processing.CORNER);
                 _processing.noFill();
                 _processing.stroke(255);
-                _processing.rect(_x, _y - 12, _width, _height + 2);
+                _processing.rect(0, 0, _width, _height + 2);
 
                 _processing.fill(255);
-                _processing.text(_data.total + " " + _data.user.name, _x, _y - 10, _width, _height + 10);
+                _processing.text(_data.total + " " + _data.user.name, 2, 2, _width, _height + 10);
+                _processing.popMatrix();
             },
             "manual_updatePosition": function (x, y) {
                 _x = x;
@@ -488,7 +609,7 @@ var DataVisualization = function() {
             },
             "copy": function () {
                 var c = new UserToken();
-                c.init(_x, _y, _data, _processing);
+                c.init(_x, _y,  _data, _processing);
                 c.isCopy(true);
                 return c;
             },
@@ -514,38 +635,76 @@ var DataVisualization = function() {
         var _y;
         var _offset = 0;
         return {
-            "init": function (users, processing, x, y) {
-                _x = x;
-                _y = y;
+            //coordinates = {x,y,rotation} as we can have them displayed multiple times
+            "init": function (users, processing, coordinates) {
+
                 _processing = processing;
                 var i = 0;
+                coordinates.forEach(function(c)
+                {
+                    _users.push([]);
+                });
                 users.forEach(function (u) {
-                    var user = new UserToken();
+
                     //the data we get from users actually contains the key (facebook_.. ) + phases
                     //__users contains real user data. so we gotta put those together
                     var userData = __users[u.key] != undefined ? __users[u.key] : undefined;
                     if (userData == undefined) return;
 
                     var data = {id: u.key, user: userData, phases: u.value.countByPhase, total: u.value.total}
-                    user.init(parseInt(i / 13) * 120 + _x, (i % 13) * 15 + _y, data, processing);
-                    _users.push(user);
+                    //draw them for each side of the table (in normal situation
+                    var coordIndex = 0;
+                    coordinates.forEach(function(c){
+                        _processing.pushMatrix();
+
+                        _processing.translate(c.x, c.y);
+                        _processing.rotate(c.r);
+                        var user = new UserToken();
+                        user.init(parseInt(i /9) * 120, (i % 9) * 15,data, processing, c.rotate);
+                        _users[coordIndex].push({user:user, coord: c});
+                        coordIndex++;
+                        _processing.popMatrix();
+                    });
+
                     i++;
                 });
+
             },
             "draw": function () {
 
 
                 _users.forEach(function (u) {
-                    u.draw();
-                })
+
+                    u.forEach(function(uc){
+
+                            _processing.pushMatrix();
+
+                            _processing.translate(uc.coord.x, uc.coord.y);
+                            _processing.rotate(uc.coord.r);
+                            uc.user.draw();
+                            _processing.popMatrix();
+                        }
+                    );
+
+
+                });
+
 
             },
             "update": function (touches) {
+
                 _users.forEach(function (u) {
 
-                    u.update(touches, u);
-                });
+                    u.forEach(function(uc){
 
+
+                            uc.user.update(touches,uc.user);
+
+                        }
+                    );
+
+
+                });
             }
 
         }
@@ -611,15 +770,30 @@ var DataVisualization = function() {
         var _pulse = 1.0;
         var drawSquare = function () {
 
+            //if dockd, draw some extra background
+            if(_docked) {
+                _processing.rectMode(_processing.CORNER);
+                _processing.noStroke();
+                _processing.fill(125);
+                _processing.rect(_x, _y-8, 210, 24);
+            }
             //let's have a maximum of 4 docks for now
             //draw a square with each quadrant the color of the dock if highlighted
-            var width = 4;
-            var height = 8
+            var width = 8;
+            var height = 8;
+            var spacing = 2;
             if (_pressed)
-                size = 4;
+                width = 8;
             _processing.rectMode(_processing.CORNER);
             _processing.noStroke();
             var i = 0;
+
+            var positions =[
+                {x:_x, y:_y},                                                 {x:_x + 2 * (width + spacing), y:_y},
+                {x:_x, y:_y + height + spacing},   {x:_x + 1 * width + spacing, y:_y + height + spacing},   {x:_x + 2 * (width + spacing), y:_y + height + spacing},
+
+
+            ];
 
             Object.keys(_highlight).forEach(function (k) {
                 if (_highlight[k] == 2) {
@@ -634,19 +808,19 @@ var DataVisualization = function() {
                 else {
                     _processing.fill(255);
                 }
-                var x = _x + width * i;// + i * 2;
-                var y = _y;
+                var x = positions[i].x;
+                var y = positions[i].y;
                 _processing.rect(x, y - height / 2, width, height);
 
 
                 i++;
             })
 
-            for (var j = i; j < 2; j++) {
+            for (var j = i; j < 5; j++) {
                 var color = (parseInt(0xffffff) & 0xffffff) | (parseInt(255 * _twAppear) << 24);
                 _processing.fill(color);
-                var x = _x + width * j;// + j * 2;
-                var y = _y;
+                var x = positions[j].x;
+                var y = positions[j].y;
 
                 _processing.rect(x, y - height / 2, width, height);
             }
@@ -675,44 +849,46 @@ var DataVisualization = function() {
                 _processing = processing;
                 _order = order;
 
+
+
             },
             "update": function (touches, _self) {
                 //TODO: fix this, there must e a way to really empty a hash and then check if it's empty
+
                 if (touches == undefined) {
                     _pressed = false;
                     return;
                 }
-                Object.keys(touches).forEach(function (t) {
-                    if (touches[t] == undefined) return;
-                    //check if mouse isn't clicked in item
-                    var touch = touches[t];
-                    var mouseDist = _processing.dist(_processing.screenX(_x, _y), _processing.screenY(_x, _y), touch.x, touch.y);
-                    if (mouseDist < 5) {
-                        _pressed = true;
-
-                    }
-                    else {
-                        _pressed = false;
-                        return;
-                    }
-                    //make a copy
+                var touch = _self.touched(touches);
+                if (touch != undefined) {
+                    _pressed = true;
                     if (!_isCopy && _pressed) {
                         __copyHandler.generateCopyFor(touch, _self);
                         return;
                     }
                     //it's a copy, move it around
                     _self.manual_updatePosition(touch.x, touch.y);
-                });
+                }
+                else {
+                    _pressed = false;
+                }
+
 
                 //update pulsing
                 _pulse = (_pulse + 1) % 180;
 
                 //update appearing
-                if (_order > 0) _order -= 2;
-                else if (_twAppear < 1.0)
-                    _twAppear += 0.1 * .1;
-                else _twAppear = 1;
-
+                if(!_isCopy) {
+                    if (_order > 0) _order -= 2;
+                    else if (_twAppear < 1.0)
+                        _twAppear += 0.1 * .1;
+                    else _twAppear = 1;
+                }
+                else
+                {
+                    _order = 0;
+                    _twAppear = 1;
+                }
                 //update screen coordindates
                 _screenX = _processing.screenX(_x, _y);
                 _screenY = _processing.screenY(_x, _y)
@@ -726,9 +902,17 @@ var DataVisualization = function() {
                     if (touches[t] == undefined) return;
                     //check if mouse isn't clicked in item
                     var touch = touches[t];
-                    var mouseDist = _processing.dist(_processing.screenX(_x, _y), _processing.screenY(_x, _y), touch.x, touch.y);
+                    var mouseDist;
+                    if(_docked)
+                    {
+
+                        mouseDist = _processing.dist(_x, _y, touch.x, touch.y);
+                    }
+                    else {
+                        mouseDist = _processing.dist(_processing.screenX(_x, _y), _processing.screenY(_x, _y), touch.x, touch.y);
+                    }
                     if (mouseDist < 5) {
-                        found = t;
+                        found = touches[t];
                         return false; //break out of foreach
                     }
                 });
@@ -779,10 +963,15 @@ var DataVisualization = function() {
             },
             "isCopy": function (b) {
                 _isCopy = b;
+                if(_isCopy)
+                {
+                    _order = 0;
+                    _twAppear = 1;
+                }
             },
             "copy": function () {
                 var c = new Circle();
-                c.init(_x, _y, _data, _processing);
+                c.init(_x, _y, _data, _processing,0);
                 c.isCopy(true);
                 return c;
             },
@@ -813,6 +1002,18 @@ var DataVisualization = function() {
 
 
 //PREPROCESS
+        var preprocess_verbs = function (data) {
+            var xf = crossfilter(data);
+            var byVerb = xf.dimension(function (f) {
+                return f.verb;
+            });
+            return byVerb.group(function (d) {
+                if (d != "read" && d != "answer_given" && d != "startRun" && d != "like" && d != "delete_like" &&
+                    d != "delete_discussion_topic_reply" && d != "delete_comment" && d != "delete_arlearntask" && d != "delete_mindmeistermap")
+                    return d;
+            }).top(Infinity);
+
+        }
         var preprocess_nodes = function (data) {
             var xf = crossfilter(data);
             var byEvents = xf.dimension(function (f) {
@@ -822,7 +1023,7 @@ var DataVisualization = function() {
                 return f.verb;
             });
             byVerb.filter(function (d) {
-                if (d != "read" && d != "answer_given" && d != "startRun" && d != "like" && d != "delete_like" &&
+                if (d != "read" && d != "answer_given" && d != "startRun" && d != "like" && d != "delete_like" && d != "rating_updated" &&
                     d != "delete_discussion_topic_reply" && d != "delete_comment" && d != "delete_arlearntask" && d != "delete_mindmeistermap")
                     return d;
             });
@@ -867,6 +1068,7 @@ var DataVisualization = function() {
 
 //GLOBAL VARS
         var rotx = Math.PI / 4;
+
         var roty = Math.PI / 4;
         var _nodes;
         var _links;
@@ -884,13 +1086,15 @@ var DataVisualization = function() {
         var _touches = {};
 
 
-        var _offset = {x: 50, y: 50};
-        var _pOffset = {x: 0, y: 0};
+        var _offset = {x: 300, y: 200};
+        var _pOffset = undefined;
         var _zoom = 1;
         var _mostRightY = 0;
         var _highestX = 0;
 
         var _debugCursors = [];
+
+
 
 //METHODS
 
@@ -919,15 +1123,16 @@ var DataVisualization = function() {
             __docks.forEach(function (d) {
                 d.update(_touches);
             })
+            __dataDock.update(_touches);
             __userHandler.update(_touches);
-            __phaseHandler.update(_touches);
+            //__phaseHandler.update(_touches);
 
 
             //drawing
 
 
             processing.pushMatrix();
-            if (_offset.x > 100) _offset.x = 100;
+            if (_offset.x > 300) _offset.x = 300;
             processing.translate(_offset.x / _zoom, _offset.y / _zoom);
 
             //do updates within matrix transofmrations
@@ -937,10 +1142,11 @@ var DataVisualization = function() {
 
 
             //processing.noStroke();
-
+            var noPhaseButCount = 0;
             Object.keys(_yPerEvent).forEach(function (y) {
 
-                drawPhase(_yPerEvent[y].phase, _yPerEvent[y].subphase, _yPerEvent[y].y, processing);
+                drawPhase((noPhaseButCount%2+1)*3, _yPerEvent[y].subphase, _yPerEvent[y].y, processing);
+                noPhaseButCount++;
             });
 
             _circles.forEach(function (d) {
@@ -966,18 +1172,30 @@ var DataVisualization = function() {
             processing.pushMatrix();
 
             processing.translate(0, _offset.y / _zoom);
+            var noPhaseButCount = 0;
             Object.keys(_yPerEvent).forEach(function (y) {
 
-                drawPhaseHeader(_yPerEvent[y].phase, _yPerEvent[y].title, _yPerEvent[y].y, processing);
+                drawPhaseHeader((noPhaseButCount%2+1)*3, _yPerEvent[y].title, _yPerEvent[y].y, processing);
+                noPhaseButCount++;
             });
             processing.popMatrix();
+
+            //draw background for ui
+            processing.rectMode(processing.CORNER);
+            processing.noStroke();
+            processing.fill(0);
+            processing.rect(0,0, 160, $("#" + _canvas).height());
+            processing.rect(0,$("#" + _canvas).height()-160, $("#" + _canvas).width(), 160 );
+            processing.rect($("#" + _canvas).width()-160,0, 160, $("#" + _canvas).width());
+
             __docks.forEach(function (d) {
                 d.draw(processing);
             })
+            __dataDock.draw(processing);
             __userHandler.draw();
             __copyHandler.draw(processing);
 
-            __phaseHandler.draw();
+           // __phaseHandler.draw();
 
             //debug draw cursors
             Object.keys(_debugCursors).forEach(function(c)
@@ -1079,17 +1297,18 @@ var DataVisualization = function() {
          */
         var drawPhaseHeader = function (phase, title, y, processing) {
             setPhaseColor(phase, processing);
-            processing.rectMode(processing.CORNERS);
+            processing.rectMode(processing.CORNER);
             processing.noStroke();
-            processing.rect(0, y - 10, 100, y + 10);
+            processing.rect(200, y - 10, 100, 40);
             processing.fill(255);
-            processing.text(title, 0, y)
+            processing.text(title, 200, y+10)
         };
         var drawPhase = function (phase, subphase, y, processing) {
+
             setPhaseColor(phase, processing);
-            processing.rectMode(processing.CORNERS);
+            processing.rectMode(processing.CORNER);
             processing.noStroke();
-            processing.rect(0, y - 10, _highestX + 10, y + 10);
+            processing.rect(0, y - 10, _highestX + 10, 40);
             processing.fill(255);
 
             //console.log("draw rect");
@@ -1101,8 +1320,8 @@ var DataVisualization = function() {
             //make a circle out of every node
 
 
-            var xSpacing = 10;
-            var ySpacing = 20;
+            var xSpacing = 40;
+            var ySpacing = 40;
 
             var x = 10;
             var y = 10;
@@ -1138,6 +1357,11 @@ var DataVisualization = function() {
 
                 var c = new Circle();
                 c.init(x, y, n, processing, order);
+                //fill the dock colors. k this is a hack, we don't have time for anything else tho
+                __docks.forEach(function(d){
+                    c.highlight(d.getColor(),1);
+                });
+
                 _circles.push(c);
                 order++;
 
@@ -1169,6 +1393,7 @@ var DataVisualization = function() {
                 _nodes = preprocess_nodes(data);
                 _links = preprocess_links(data);
                 _users = preprocess_users(data);
+                __verbs = preprocess_verbs(data);
                 _flipped = flipped;
 
                 initProcessing();
@@ -1176,8 +1401,14 @@ var DataVisualization = function() {
                 createCircles(processing);
                 createPhases();
                 //linkUsersToCircles();
-                __userHandler.init(_users, processing, 280, $("#" + __canvas).height() - 170);
-                __phaseHandler.init(processing, 200, $("#" + __canvas).height() - 170);
+                var userCoordinates = [
+                    {x:120, y: $("#" + __canvas).height() - 140, r:0},
+                    {x:$("#" + __canvas).width()/2 + 60, y: $("#" + __canvas).height() - 140, r:0},
+                    {x:140, y: 120, r:Math.PI/2, rotate:"left"},
+                    {x:$("#" + __canvas).width() - 140, y: $("#" + __canvas).height() - 120, r:-Math.PI/2, rotate:"right"}
+                ];
+                __userHandler.init(_users, processing, userCoordinates);
+                //__phaseHandler.init(processing, 200, $("#" + __canvas).height() - 300);
 
 
             },
@@ -1190,8 +1421,12 @@ var DataVisualization = function() {
                     y = $("#" + _canvas).height() - y;
 
                 }
+                if(_pOffset == undefined) {
+                    _pOffset ={x: _offset.x, y:_offset.y};
+                    _pOffset.startX = x ;
+                    _pOffset.id = id;
 
-                _pOffset = _offset;
+                }
 
                 _debugCursors[id] = {id:id,x:x,y:y};
                 _touches[id] = {id:id,x:x,y:y, startx:x, starty:y};
@@ -1213,9 +1448,10 @@ var DataVisualization = function() {
                 _touches[id].x = x;
                 _touches[id].y = y;
 
-                 if(y < 200 || (_flipped && y < $("#" + _canvas).height() - 200)) {
-                     _offset.x = (_touches[id].x - _touches[id].startx);// + _pOffset.x;
-                     _offset.y = (_touches[id].y - _touches[id].starty);// + _pOffset.y;
+                 if(_pOffset != undefined && id == _pOffset.id && y < 200 || (_flipped && y < $("#" + _canvas).height() - 200)) {
+                     //console.log("vector(" +_touches[id].x + " "+  _pOffset.startX + ") on x " + _pOffset.x );
+                     _offset.x = (_touches[id].x - _pOffset.startX) + _pOffset.x;
+                     //_offset.y = (_touches[id].y - _touches[id].starty);// + _pOffset.y;
                  }
 
             },
@@ -1223,8 +1459,11 @@ var DataVisualization = function() {
 
                 _debugCursors[id] = undefined;
                 _touches[id] = undefined;
+                if(_pOffset != undefined && id == _pOffset.id) {
 
-                _pOffset = undefined
+                    _pOffset = undefined
+                }
+
 
             },
             "getVisualizationItems": function () {
@@ -1237,7 +1476,8 @@ var DataVisualization = function() {
     }
 
     var __canvas;
-
+    var __dataDock;
+    var __verbs;
     return {
 
         "loadVisualization" : function (canvas, flipped, dockColor1, dockColor2) {
@@ -1251,23 +1491,39 @@ var DataVisualization = function() {
             var byVerb = xf.dimension(function (d) {
                 return d.verb.toLowerCase();
             });
+
+            var dock1 = new Dock();
+            dock1.init(0, 0, 100, 100, "dock1", dockColor1, dock1);
+            __docks.push(dock1);
+
+            var dock5 = new Dock();
+            dock5.init($("#" + __canvas).width()-100,0,100,100,"dock5", "0xCC8CFF6B", dock5);
+            __docks.push(dock5);
+
+            var dock2 = new Dock();
+            dock2.init(0, $("#" + __canvas).height() - 100, 100, 100, "dock2", dockColor2, dock2);
+            __docks.push(dock2);
+            var dock3 = new Dock();
+            dock3.init($("#" + __canvas).width()/2-50,$("#" + __canvas).height()-100,100,100,"dock3", "0xCCfff3a2", dock3);
+            __docks.push(dock3);
+
+            var dock4 = new Dock();
+            dock4.init($("#" + __canvas).width()-100,$("#" + __canvas).height()-100,100,100,"dock4", "0xCCff1313", dock4);
+            __docks.push(dock4);
+
+
+
+            __filterHandler.init(__docks);
+
             //byVerb.filterFunction(function(f){ return f != "rated"});
             __vis = new visualization();
             __vis.init(byUser.top("Infinity"), canvas, flipped);
-            var dock1 = new Dock();
-            dock1.init(0, $("#" + __canvas).height() - 200, 150, 100, "dock1", dockColor1, dock1);
-            __docks.push(dock1);
-            var dock2 = new Dock();
-            dock2.init(0, $("#" + __canvas).height() - 100, 150, 100, "dock2", dockColor2, dock2);
-            __docks.push(dock2);
-            /* var dock3 = new Dock();
-             dock3.init(0,$("#" + __canvas).height()-100,300,100,"dock3", "0xCCfff3a2", dock3);
-             __docks.push(dock3);
-             var dock4 = new Dock();
-             dock4.init(300,$("#" + __canvas).height()-100,300,100,"dock4", "0xCCff1313", dock4);
-             __docks.push(dock4);*/
-            __filterHandler.init(__docks);
 
+
+            //create a dock for data drops
+            __dataDock = new Dock();
+            __dataDock.init(200, 200, $("#" + __canvas).width()-400,30, "dataDock", "0xCC545454", __dataDock);
+            __dataHandler.init(__dataDock);
 
         },
         "addTouch": function (id, x, y) {

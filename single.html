@@ -2,6 +2,7 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no">
     <link rel="stylesheet" href="style.css">
     <script type="application/javascript" src="bower_components/jquery/dist/jquery.js"></script>
     <script type="application/javascript" src="bower_components/crossfilter/crossfilter.js"></script>
@@ -18,7 +19,7 @@
     <script type="application/javascript" src="visualization/htmlDockController.js"></script>
     <script type="application/javascript" src="visualization/visualization.js"></script>
 
-    <script src="http://localhost:5555/socket.io/socket.io.js"></script>
+    <script src="http://mistral.local:5555/socket.io/socket.io.js"></script>
 
 
 
@@ -27,19 +28,19 @@
         var ___socket_LARA;
         function loadVisualizations()
         {
-            var vis1 = new DataVisualization();
-            vis1.loadVisualization("canvas1",true,"0xCC00deff","0xCCff03f0");
-            var vis2 =  new DataVisualization();
-            vis2.loadVisualization("canvas2",true,"0xCC01ff3d", "0xCC9cff01");
-            var vis3 = new DataVisualization();
-            vis3.loadVisualization("canvas3",false,"0xCCff0701","0xCCff9001");
-            var vis4 =  new DataVisualization();
-            vis4.loadVisualization("canvas4",false,"0xCCddfe00","0xCC849a0c");
-
             var wwidth = $(window).width();
             var wheight = $(window).height();
-            var cwidth = $("#canvas1").width();
-            var cheight = $("#canvas1").height();
+            $("#canvas1").width(wwidth);
+            $("#canvas1").height(wheight);
+
+
+            var vis1 = new DataVisualization();
+
+
+            vis1.loadVisualization("canvas1",false,"0xCC00deff","0xCCff03f0");
+
+
+
 
 
 
@@ -50,39 +51,21 @@
                     onAddTuioCursor = function(addCursor) {
                         var x = addCursor.getScreenX(wwidth);
                         var y = addCursor.getScreenY(wheight);
-                        if(x < cwidth && y < cheight)
                             vis1.addTouch(addCursor.cursorId,x,y);
-                        if(x > cwidth && y < cheight)
-                            vis2.addTouch(addCursor.cursorId,x-cwidth,y);
-                        if(x < cwidth && y > cheight)
-                            vis3.addTouch(addCursor.cursorId,x,y-cheight);
-                        if(x >cwidth && y > cheight)
-                            vis4.addTouch(addCursor.cursorId,x-cwidth,y-cheight);
-
                         //console.log(addCursor);
                     },
 
                     onUpdateTuioCursor = function(updateCursor) {
                         var x = updateCursor.getScreenX(wwidth);
                         var y = updateCursor.getScreenY(wheight);
-                        if(x < cwidth && y < cheight)
                             vis1.updateTouch(updateCursor.cursorId,x,y);
-                        if(x > cwidth && y < cheight)
-                            vis2.updateTouch(updateCursor.cursorId,x-cwidth,y);
-                        if(x < cwidth && y > cheight)
-                            vis3.updateTouch(updateCursor.cursorId,x,y-cheight);
-                        if(x > cwidth && y > cheight)
-                            vis4.updateTouch(updateCursor.cursorId,x-cwidth,y-cheight);
+
+
                     },
 
                     onRemoveTuioCursor = function(removeCursor) {
                         //always remove, wherever finger is hovering
-                        var x = removeCursor.getScreenX(wwidth);
-                        var y = removeCursor.getScreenY(wheight);
-                            vis1.removeTouch(removeCursor.cursorId,x,y);
-                            vis2.removeTouch(removeCursor.cursorId,x,y);
-                            vis3.removeTouch(removeCursor.cursorId,x,y);
-                            vis4.removeTouch(removeCursor.cursorId,x,y);
+                        vis1.removeTouch(removeCursor.cursorId);
                     },
 
                     onAddTuioObject = function(addObject) {
@@ -111,7 +94,8 @@
             client.connect();
 
             //socket.io implementation
-            ___socket_LARA = io.connect("http://localhost:5555")
+            ___socket_LARA = io.connect("http://mistral.local:5555");
+             ___socket_LARA.emit("reset");
             /*
              ___socket_LARA.emit("addObject", {id:"1",message:"TEST"});
              ___socket_LARA.on("addObject", function(m){console.log(m)});
@@ -121,14 +105,11 @@
 
     <title>LARAe.TT</title>
 </head>
-<body id="main" onload="javascript:load(loadVisualizations)" style="padding:0;margin:0">
+<body id="main" onload="javascript:load(loadVisualizations)" style="padding:0;margin:0;overflow: hidden">
 
-<canvas id="canvas1" width="750" height="500" style="margin:0"></canvas>
-<canvas id="canvas2" width="750" height="500" style="margin:0"></canvas>
-<canvas id="canvas3" width="750" height="500" style="margin:0"></canvas>
-<canvas id="canvas4" width="750" height="500" style="margin:0"></canvas>
+<canvas id="canvas1" width="1200" height="800" style="margin:0;padding:0"></canvas>
 
-<!-- <div id="docking" style="width:100%;height:200px;border:solid 1px black"></div> -->
+ <iframe src="shared.html"  id="docking" seamless="seamless" scrolling="no"  style="overflow-y:hidden;position:absolute;width:1130px;height:200px;top:0;left:200px;"></iframe>
 
 <script type="application/javascript">
 
