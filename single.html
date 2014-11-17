@@ -9,7 +9,7 @@
 
 
     <script type="application/javascript" src="bower_components/Processing.js/processing.js"></script>
-    <script type="application/javascript" src="http://localhost:5000/libs/socket.io.js"></script>
+
     <script type="application/javascript" src="bower_components/lodash/dist/lodash.js"></script>
 
     <script type="application/javascript" src="3rdparty/Tuio.js"></script>
@@ -19,13 +19,18 @@
     <script type="application/javascript" src="visualization/htmlDockController.js"></script>
     <script type="application/javascript" src="visualization/visualization.js"></script>
 
-    <script src="http://mistral.local:5555/socket.io/socket.io.js"></script>
+    <script src="http://localhost:5555/socket.io/socket.io.js"></script>
+    <script src="http://localhost:8080/socket.io/socket.io.js"></script>
+    <script type="application/javascript" src="http://localhost:5000/libs/socket.io.js"></script>
 
 
 
     <script type="application/javascript">
 
         var ___socket_LARA;
+        var ___socket_JORIS;
+        var touchesToDBAdd = [], touchesToDBRemove = [], touchesToDBUpdate = [];
+        var ___browserID;
         function loadVisualizations()
         {
             var wwidth = $(window).width();
@@ -40,6 +45,7 @@
             vis1.loadVisualization("canvas1",false,"0xCC00deff","0xCCff03f0");
 
 
+            ___socket_JORIS = io.connect("http://localhost:8080");
             document.body.addEventListener('touchmove', function(event) {
                 event.preventDefault();
             }, false);
@@ -54,6 +60,13 @@
                         var x = addCursor.getScreenX(wwidth);
                         var y = addCursor.getScreenY(wheight);
                             vis1.addTouch(addCursor.cursorId,x,y);
+                        var touchdata = {"timestamp": (new Date()).getTime(), "touch":{"type":"add","x":x, "y":y, "id":addCursor.cursorId}};
+                        touchesToDBAdd.push(touchdata);
+                        if(touchesToDBAdd.length >100) {
+                            console.log("emit")
+                            ___socket_JORIS.emit("touchdata", JSON.stringify(touchesToDBAdd));
+                            touchesToDBAdd = [];
+                        }
                         //console.log(addCursor);
                     },
 
@@ -61,13 +74,28 @@
                         var x = updateCursor.getScreenX(wwidth);
                         var y = updateCursor.getScreenY(wheight);
                             vis1.updateTouch(updateCursor.cursorId,x,y);
+                        var touchdata = {"timestamp": (new Date()).getTime(), "touch":{"type":"update","x":x, "y":y, "id":updateCursor.cursorId}};
+                        touchesToDBUpdate.push(touchdata);
+                        if(touchesToDBUpdate.length>1000) {
+                            ___socket_JORIS.emit("touchdata", JSON.stringify(touchesToDBUpdate));
+                            console.log(touchesToDBUpdate)
+                            touchesToDBUpdate = [];
 
+                        }
 
                     },
 
                     onRemoveTuioCursor = function(removeCursor) {
                         //always remove, wherever finger is hovering
                         vis1.removeTouch(removeCursor.cursorId);
+                        var touchdata = {"timestamp": (new Date()).getTime(), "touch":{"type":"remove", "id":removeCursor.cursorId}};
+                        touchesToDBRemove.push(touchdata);
+                        if(touchesToDBRemove.length>100) {
+                            ___socket_JORIS.emit("touchdata", JSON.stringify(touchesToDBRemove));
+                            touchesToDBRemove = [];
+                            console.log("emmitiign")
+                        }
+
                     },
 
                     onAddTuioObject = function(addObject) {
@@ -96,13 +124,31 @@
             client.connect();
 
             //socket.io implementation
-            ___socket_LARA = io.connect("http://mistral.local:5555");
-             ___socket_LARA.emit("reset");
+            ___browserID = GetURLParameter("id");
+            ___socket_LARA = io.connect("http://localhost:5555");
+             ___socket_LARA.emit("reset",{id:___browserID});
             /*
              ___socket_LARA.emit("addObject", {id:"1",message:"TEST"});
              ___socket_LARA.on("addObject", function(m){console.log(m)});
              */
+            $("#docking").attr('src',"shared.html?id=" + ___browserID);
         }
+
+
+        function GetURLParameter(sParam)
+        {
+            var sPageURL = window.location.search.substring(1);
+            var sURLVariables = sPageURL.split('&');
+            for (var i = 0; i < sURLVariables.length; i++)
+            {
+                var sParameterName = sURLVariables[i].split('=');
+                if (sParameterName[0] == sParam)
+                {
+                    return sParameterName[1];
+                }
+            }
+        };
+
     </script>
 
     <title>LARAe.TT</title>
@@ -111,7 +157,7 @@
 
 <canvas id="canvas1" width="1200" height="800" style="margin:0;padding:0"></canvas>
 
- <iframe src="shared.html"  id="docking" seamless="seamless" scrolling="no"  style="overflow-y:hidden;position:absolute;width:1130px;height:200px;top:0;left:200px;"></iframe>
+ <iframe src="shared.html"  id="docking" seamless="seamless" scrolling="no"  style="overflow-y:hidden;position:absolute;width:1500px;height:300px;top:0;left:200px;"></iframe>
 
 <script type="application/javascript">
 

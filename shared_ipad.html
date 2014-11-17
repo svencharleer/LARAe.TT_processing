@@ -17,7 +17,7 @@
     <script type="application/javascript" src="visualization/htmlDockController.js"></script>
     <script type="application/javascript" src="visualization/visualization.js"></script>
 
-    <script src="http://localhost:5555/socket.io/socket.io.js"></script>
+    <script src="http://lara.local:5555/socket.io/socket.io.js"></script>
 
 
 
@@ -114,7 +114,7 @@
             var __data = {};
             var __items = {};
             console.log("fetching data");
-            ___socket_LARA = io.connect("http://localhost:5555");
+            ___socket_LARA = io.connect("http://lara.local:5555");
             var _id = GetURLParameter("id");
             ___socket_LARA.emit("register");
             ___socket_LARA.on("fetchObjects", function (msg) {

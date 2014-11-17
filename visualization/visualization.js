@@ -270,8 +270,8 @@ var DataVisualization = function() {
                         _items[ii.getData().event_id] = undefined;
                     }
                 });
-                ___socket_LARA.emit("addObjects", {canvas: __canvas, objects:itemsToAdd});
-                ___socket_LARA.emit("removeObjects", {canvas: __canvas, objects:itemsToRemove});
+                ___socket_LARA.emit("addObjects", {id: ___browserID,canvas: __canvas, objects:itemsToAdd});
+                ___socket_LARA.emit("removeObjects", {id: ___browserID,canvas: __canvas, objects:itemsToRemove});
                 console.log("in");
                 console.log(items);
                 console.log("out");
@@ -646,7 +646,7 @@ var DataVisualization = function() {
                     _users.push([]);
                 });
                 users.forEach(function (u) {
-
+                    if(i > 22) return false;
                     //the data we get from users actually contains the key (facebook_.. ) + phases
                     //__users contains real user data. so we gotta put those together
                     var userData = __users[u.key] != undefined ? __users[u.key] : undefined;
@@ -665,9 +665,11 @@ var DataVisualization = function() {
                         _users[coordIndex].push({user:user, coord: c});
                         coordIndex++;
                         _processing.popMatrix();
+
                     });
 
                     i++;
+
                 });
 
             },
@@ -1093,7 +1095,7 @@ var DataVisualization = function() {
         var _touches = {};
 
 
-        var _offset = {x: 300, y: 200};
+        var _offset = {x: 300, y: 350};
         var _pOffset = undefined;
         var _zoom = 1;
         var _mostRightY = 0;
@@ -1186,6 +1188,15 @@ var DataVisualization = function() {
                 noPhaseButCount++;
             });
             processing.popMatrix();
+
+            //draw slide area
+            processing.rectMode(processing.CORNER);
+            processing.noStroke();
+            processing.fill(50);
+            processing.rect(0,800, $("#" + _canvas).width(), 70);
+            processing.fill(150);
+            processing.triangle(210,825, 300,810, 300, 860);
+            processing.triangle($("#" + _canvas).width()-210,825, $("#" + _canvas).width()-300,810, $("#" + _canvas).width()-300, 860);
 
             //draw background for ui
             processing.rectMode(processing.CORNER);
@@ -1455,7 +1466,7 @@ var DataVisualization = function() {
                 _touches[id].x = x;
                 _touches[id].y = y;
 
-                 if(_pOffset != undefined && id == _pOffset.id && y < 200 || (_flipped && y < $("#" + _canvas).height() - 200)) {
+                 if(_pOffset != undefined && id == _pOffset.id && y > 700 && y < 900|| (_flipped && y < $("#" + _canvas).height() - 200)) {
                      //console.log("vector(" +_touches[id].x + " "+  _pOffset.startX + ") on x " + _pOffset.x );
                      _offset.x = (_touches[id].x - _pOffset.startX) + _pOffset.x;
                      //_offset.y = (_touches[id].y - _touches[id].starty);// + _pOffset.y;
@@ -1529,7 +1540,7 @@ var DataVisualization = function() {
 
             //create a dock for data drops
             __dataDock = new Dock();
-            __dataDock.init(200, 200, $("#" + __canvas).width()-400,30, "dataDock", "0xCC545454", __dataDock);
+            __dataDock.init(200, 300, $("#" + __canvas).width()-400,80, "dataDock", "0xCC545454", __dataDock);
             __dataHandler.init(__dataDock);
 
         },

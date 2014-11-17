@@ -20,7 +20,7 @@ function loadData()
         $.getJSON('/wespot/inquiries/getById/39569/', data_loading_done, "json");
     else {
 
-        $.getJSON('./data/offlineData.json', data_loading_done, "json");
+        $.getJSON('./data/offlineData_W.json', data_loading_done, "json");
     }
 }
 
