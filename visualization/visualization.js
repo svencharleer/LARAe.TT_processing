@@ -2,6 +2,301 @@
  * Created by svenc on 21/10/14.
  */
 
+
+var AwarenessToken = function()
+{
+
+    return{
+        "drawRealTable":function(x,y, _highlight, _processing, screenWidth, screenHeight,_twAppear,_pulse) {
+            var width = 7, height = 7;
+
+            var sphereWidth = 25;
+            var sphereHeight = 16;
+            _processing.noFill();
+            _processing.stroke(128);
+            //_processing.ellipse(x,y,2*sphereWidth,2*sphereHeight)
+
+            _processing.rectMode(_processing.CORNER);
+            _processing.noStroke();
+            var i = 0;
+
+            _processing.strokeWeight(1);
+            _processing.fill(255);
+            _processing.rect(x+sphereWidth/4, y+sphereHeight/3, sphereWidth/2, 2);
+            Object.keys(_highlight).forEach(function (k) {
+                if (_highlight[k].type == 2) {
+                    //will also pulsate
+                    //var pulseTransformed = Math.sin(_pulse * (Math.PI / 180));
+                    //var color = (parseInt(k) & 0xffffff) | (parseInt(pulseTransformed * 255 * _twAppear) << 24);
+                    //_processing.fill(color);
+                    _processing.fill(parseInt(k));
+                    _processing.stroke(parseInt(k));
+                }
+                else if (_highlight[k].type == 0) {
+                    _processing.fill(128);
+                    _processing.stroke(128);
+                }
+                else {
+                    _processing.fill(128);
+                    _processing.stroke(128);
+                }
+
+                var xDiff = (_highlight[k].x / screenWidth );
+                var yDiff = (_highlight[k].y / screenHeight );
+                var v = new _processing.PVector(xDiff, yDiff);
+                //v.normalize();
+                xDiff = v.x *  sphereWidth;
+                yDiff = v.y * sphereHeight;
+
+               // _processing.line(x,y,x+xDiff,y+yDiff);
+
+                _processing.ellipse(x+xDiff,y+yDiff, 4,4)
+
+
+                i++;
+            })
+        },
+        "drawTable":function(x,y, _highlight, _processing, screenWidth, screenHeight,_twAppear,_pulse)
+        {
+            var width = 7, height = 7;
+
+            var sphereWidth = 10;
+            var sphereHeight = 10;
+            _processing.noFill();
+            _processing.stroke(128);
+            //_processing.ellipse(x,y,2*sphereWidth,2*sphereHeight)
+
+            _processing.rectMode(_processing.CORNER);
+            _processing.noStroke();
+            var i = 0;
+
+            _processing.strokeWeight(1);
+            _processing.fill(128);
+            _processing.ellipse(x,y, 8,8)
+            Object.keys(_highlight).forEach(function (k) {
+                if (_highlight[k].type == 2) {
+                    //will also pulsate
+                    //var pulseTransformed = Math.sin(_pulse * (Math.PI / 180));
+                    //var color = (parseInt(k) & 0xffffff) | (parseInt(pulseTransformed * 255 * _twAppear) << 24);
+                    //_processing.fill(color);
+                    _processing.fill(parseInt(k));
+                }
+                else if (_highlight[k].type == 0) {
+                    _processing.fill(128);
+                }
+                else {
+                    _processing.fill(255);
+                }
+
+                var xDiff = (_highlight[k].x-screenWidth/2.0);
+                var yDiff = (_highlight[k].y-screenHeight/2.0);
+                var v = new _processing.PVector(xDiff,yDiff);
+                v.normalize();
+                xDiff = v.x * sphereWidth;
+                yDiff = v.y * sphereHeight;
+
+                //_processing.line(x,y,x+xDiff,y+yDiff);
+                _processing.ellipse(x+xDiff,y+yDiff, 4,4)
+
+
+                i++;
+            })
+
+
+        },
+        //drawStatic
+        "draw":function(x,y, _highlight, _processing, screenWidth, screenHeight,_twAppear,_pulse)
+        {
+            var width = 7, height = 7;
+
+            var sphereWidth = 8;
+            var sphereHeight = 8;
+            _processing.noFill();
+            _processing.stroke(128);
+            //_processing.ellipse(x,y,2*sphereWidth,2*sphereHeight)
+
+            _processing.rectMode(_processing.CORNER);
+            _processing.noStroke();
+            var i = 0;
+
+            _processing.strokeWeight(1);
+            _processing.fill(128);
+            _processing.ellipse(x+sphereWidth/2,y+sphereHeight/2, sphereWidth,sphereWidth);
+
+            Object.keys(_highlight).forEach(function (k) {
+                if (_highlight[k].type == 2) {
+                    //will also pulsate
+                    //var pulseTransformed = Math.sin(_pulse * (Math.PI / 180));
+                    //var color = (parseInt(k) & 0xffffff) | (parseInt(pulseTransformed * 255 * _twAppear) << 24);
+                    //_processing.fill(color);
+                    _processing.fill(parseInt(k));
+                }
+                else if (_highlight[k].type == 0) {
+                    _processing.fill(128);
+                }
+                else {
+                    _processing.fill(255);
+                }
+
+
+
+                //_processing.line(x,y,x+xDiff,y+yDiff);
+                _processing.ellipse(x+sphereWidth*2,y+i*5 - sphereHeight/2 , 4,4)
+
+
+                i++;
+            })
+
+
+        },
+        //drawFlake/bars
+        "drawFlake":function(x,y, _highlight, _processing, screenWidth, screenHeight,_twAppear,_pulse)
+        {
+            var width = 7, height = 7;
+
+            var sphereWidth = 10;
+            var sphereHeight = 10;
+            _processing.noFill();
+            _processing.stroke(128);
+            //_processing.ellipse(x,y,2*sphereWidth,2*sphereHeight)
+
+            _processing.rectMode(_processing.CORNER);
+            _processing.noStroke();
+            var i = 0;
+
+            _processing.strokeWeight(1);
+
+            Object.keys(_highlight).forEach(function (k) {
+
+
+                var xDiff = (_highlight[k].x-screenWidth/2.0);
+                var yDiff = (_highlight[k].y-screenHeight/2.0);
+                var v = new _processing.PVector(xDiff,yDiff);
+                v.normalize();
+                xDiff = v.x * sphereWidth;
+                yDiff = v.y * sphereHeight;
+                _processing.stroke(128);
+                _processing.line(x,y,x+xDiff,y+yDiff);
+                if (_highlight[k].type == 2) {
+                    //will also pulsate
+                    //var pulseTransformed = Math.sin(_pulse * (Math.PI / 180));
+                    //var color = (parseInt(k) & 0xffffff) | (parseInt(pulseTransformed * 255 * _twAppear) << 24);
+                    //_processing.fill(color);
+                    _processing.stroke(parseInt(k));
+                }
+                else if (_highlight[k].type == 0) {
+                    _processing.stroke(128);
+                }
+                else {
+                    _processing.stroke(128);
+                }
+                _processing.ellipse(x+xDiff,y+yDiff, 2,2)
+
+
+                i++;
+            })
+
+
+        },
+        //drawDirection
+        "drawDirection":function(x,y, _highlight, _processing, screenWidth, screenHeight,_twAppear,_pulse, screenX, screenY)
+        {
+            var width = 7, height = 7;
+
+            var sphereWidth = 10;
+            var sphereHeight = 10;
+            _processing.noFill();
+            _processing.stroke(128);
+            //_processing.ellipse(x,y,2*sphereWidth,2*sphereHeight)
+
+            _processing.rectMode(_processing.CORNER);
+            _processing.noStroke();
+            var i = 0;
+
+            _processing.strokeWeight(1);
+
+            Object.keys(_highlight).forEach(function (k) {
+
+
+                var xDiff = (_highlight[k].x-screenX);
+                var yDiff = (_highlight[k].y-screenY);
+                var v = new _processing.PVector(xDiff,yDiff);
+                v.normalize();
+                xDiff = v.x * 10; sphereWidth;
+                yDiff = v.y * 10;sphereHeight;
+                _processing.stroke(128);
+                _processing.line(x,y,x+xDiff,y+yDiff);
+                if (_highlight[k].type == 2) {
+                    //will also pulsate
+                    //var pulseTransformed = Math.sin(_pulse * (Math.PI / 180));
+                    //var color = (parseInt(k) & 0xffffff) | (parseInt(pulseTransformed * 255 * _twAppear) << 24);
+                    //_processing.fill(color);
+                    _processing.stroke(parseInt(k));
+                }
+                else if (_highlight[k].type == 0) {
+                    _processing.stroke(128);
+                }
+                else {
+                    _processing.stroke(128);
+                }
+                _processing.ellipse(x+xDiff,y+yDiff, 2,2)
+
+
+                i++;
+            })
+
+
+        },
+        "drawCircle":function(x,y, _highlight, _processing, screenWidth, screenHeight,_twAppear,_pulse)
+        {
+            var width = 7, height = 7;
+
+            var sphereWidth = 15;
+            var sphereHeight = (screenHeight/screenWidth)* sphereWidth;
+            _processing.noFill();
+            _processing.stroke(128);
+            _processing.ellipse(x,y,2*sphereWidth,2*sphereHeight)
+
+            _processing.rectMode(_processing.CORNER);
+            _processing.noStroke();
+            var i = 0;
+
+
+
+            Object.keys(_highlight).forEach(function (k) {
+                if (_highlight[k].type == 2) {
+                    //will also pulsate
+                    //var pulseTransformed = Math.sin(_pulse * (Math.PI / 180));
+                    //var color = (parseInt(k) & 0xffffff) | (parseInt(pulseTransformed * 255 * _twAppear) << 24);
+                    //_processing.fill(color);
+                    _processing.fill(parseInt(k));
+                }
+                else if (_highlight[k].type == 0) {
+                    _processing.fill(128);
+                }
+                else {
+                    _processing.fill(255);
+                }
+
+                var xDiff = (_highlight[k].x-screenWidth/2.0);
+                var yDiff = (_highlight[k].y-screenHeight/2.0);
+                var v = new _processing.PVector(xDiff,yDiff);
+                v.normalize();
+                xDiff = v.x * sphereWidth;
+                yDiff = v.y * sphereHeight;
+
+                _processing.ellipse(x+xDiff, y +yDiff, width, height);
+
+
+                i++;
+            })
+
+
+        }
+    }
+}();
+
+
 //quick hack to make these seperate instances. yes yes i know
 //this dev has been a quicky in #%@ no time
 var DataVisualization = function() {
@@ -167,7 +462,7 @@ var DataVisualization = function() {
             },
             "update": function (touches) {
                 var copiesDocked_new = [];
-
+                var somethingstouched = false;
                 _items.forEach(function (c) {
                     var touch = c.touched(touches);
                     //if touched, hand item over to the copy handler
@@ -177,6 +472,7 @@ var DataVisualization = function() {
                     else {
                         c.docked(false);
                         __copyHandler.handover(touch, c);
+                        somethingstouched = true;
 
                     }
 
@@ -186,7 +482,23 @@ var DataVisualization = function() {
                     __filterHandler.dockChanges(_id, copiesDocked_new, _self);
                     __dataHandler.dockUpdated(_id, copiesDocked_new);
                 }
+                else
+                //quick hack to get color stuff working
+                {
+                    __filterHandler.dockChanges(_id, _items, _self);
+                }
                 _items = copiesDocked_new;
+                if(!somethingstouched)
+                {
+                    var imTouched = this.touched(touches);
+                    if(imTouched != undefined)
+                    {
+                        _x += (imTouched.x-_x)-(_width/2);
+                        _y += (imTouched.y-_y)-(_height/2);
+                    }
+                    //nothin was touched, so move this if this is touched
+                }
+
             },
             "draw": function (processing) {
                 //draw dock
@@ -202,7 +514,7 @@ var DataVisualization = function() {
                 _relatedItems.forEach(function (r) {
                     var color = (parseInt(_color) & 0xffffff) | (24 << 24);
                     processing.stroke(color);
-                    processing.line(_x, _y, r.getScreenCoordinates().x, r.getScreenCoordinates().y);
+                    //processing.line(_x, _y, r.getScreenCoordinates().x, r.getScreenCoordinates().y);
                 });
             },
             "dock": function (item) {
@@ -230,6 +542,29 @@ var DataVisualization = function() {
             },
             "relatedItems": function (items) {
                 _relatedItems = items;
+            },
+            "touched": function (touches) {
+                var found = undefined;
+
+                Object.keys(touches).forEach(function (t) {
+                    if (touches[t] == undefined) return;
+                    //check if mouse isn't clicked in item
+                    var touch = touches[t];
+                    if (touch.x > _x &&
+                        touch.y > _y  &&
+                        touch.x < _x + _width &&
+                        touch.y < _y + _height) {
+                        found = touches[t];
+                        return true;
+                    }
+                    return false;
+                });
+                return found;
+
+            },
+            "getCoordinates":function()
+            {
+                return {x:_x, y:_y};
             }
 
         }
@@ -346,13 +681,13 @@ var DataVisualization = function() {
                 //undo previous highlighting of this color
                 if (dock.users.length > 0 || dock.phases.length > 0) {
                     items.forEach(function (d) {
-                        d.highlight(dock.dock.getColor(), 0);
+                        d.highlight(dock.dock.getColor(), {type:0, x:dock.dock.getCoordinates().x,y:dock.dock.getCoordinates().y});
                     })
 
                 }
                 else {
                     items.forEach(function (d) {
-                        d.highlight(dock.dock.getColor(), 1);
+                        d.highlight(dock.dock.getColor(), {type:1, x:dock.dock.getCoordinates().x,y:dock.dock.getCoordinates().y});
                         dock.dock.relatedItems([]);
                     })
                     return;
@@ -361,7 +696,7 @@ var DataVisualization = function() {
                 //now highlight the ones we found
 
                 byUser.top(Infinity).forEach(function (d) {
-                    d.highlight(dock.dock.getColor(), 2);
+                    d.highlight(dock.dock.getColor(), {type:2, x:dock.dock.getCoordinates().x,y:dock.dock.getCoordinates().y});
                 })
 
                 //hand them to the dock, if we wanna do more fancy stuff with them
@@ -771,6 +1106,11 @@ var DataVisualization = function() {
             _processing.popMatrix();
         };
         var _pulse = 1.0;
+
+        var drawToken = function()
+        {
+            AwarenessToken.draw(_x,_y, _highlight, _processing, $("#" + __canvas).width(), $("#" + __canvas).height(),_twAppear,_pulse,_screenX, _screenY)
+        }
         var drawSquare = function () {
 
             //if dockd, draw some extra background
@@ -930,7 +1270,7 @@ var DataVisualization = function() {
 
             },
             "draw": function () {
-                drawSquare();
+                drawToken();
                 return;
 
 
@@ -1322,7 +1662,7 @@ var DataVisualization = function() {
             processing.text(title, 200, y+10)
         };
         var drawPhase = function (phase, subphase, y, processing) {
-
+            return;
             setPhaseColor(phase, processing);
             processing.rectMode(processing.CORNER);
             processing.noStroke();
@@ -1338,7 +1678,7 @@ var DataVisualization = function() {
             //make a circle out of every node
 
 
-            var xSpacing = 40;
+            var xSpacing = 50;
             var ySpacing = 40;
 
             var x = 10;
@@ -1377,7 +1717,7 @@ var DataVisualization = function() {
                 c.init(x, y, n, processing, order);
                 //fill the dock colors. k this is a hack, we don't have time for anything else tho
                 __docks.forEach(function(d){
-                    c.highlight(d.getColor(),1);
+                    c.highlight(d.getColor(),{type:1, x:0,y:0});
                 });
 
                 _circles.push(c);
