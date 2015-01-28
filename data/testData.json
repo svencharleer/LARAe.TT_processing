@@ -1,0 +1,281 @@
+[
+
+    {
+
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[1,2]},{"x":0.75,"y":0.5, "size": 5,"users":[3,4]}],
+        "type":"static",
+        "showAll":true,
+        "title": "Example Type 1"
+
+    },
+    {
+
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[1,2]},{"x":0.75,"y":0.5, "size": 5,"users":[3,4]}],
+        "type":"flake",
+        "showAll":true,
+        "title": "Example Type 2"
+
+    },
+    {
+
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[1,2]},{"x":0.75,"y":0.5, "size": 5,"users":[3,4]}],
+        "type":"table",
+        "showAll":true,
+        "title": "Example Type 3"
+
+    },
+    {
+
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[1,2]},{"x":0.75,"y":0.5, "size": 5,"users":[3,4]}],
+        "type":"flake",
+        "showAll":false,
+        "title": "Example Type 4"
+
+    },
+    {
+
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[1,2]},{"x":0.75,"y":0.5, "size": 5,"users":[3,4]}],
+        "type":"table",
+        "showAll":false,
+        "title": "Example Type 5"
+
+
+    },
+    {
+
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[1,2]},{"x":0.75,"y":0.5, "size": 5,"users":[3,4]}],
+        "type":"direction",
+        "showAll":true,
+        "title": "Example Type 6"
+
+
+    },
+
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[
+            {"x":0.25,"y":0.5, "size": 10,"users":[1,2]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[0,1]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[2,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[0,2,3]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[0,1,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[3,1]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[1,2,3,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[3,5]}
+         ],
+        "type":"static",
+        "showAll":true,
+        "title":"Which datapoints belong to user A?"
+    },
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[3,4]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[1,3,4]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[1,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[3,4]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[1,2,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[0,1,2,3]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[0,1,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[3,5]}
+        ],
+        "type":"static",
+        "showAll":true,
+        "title":"Which datapoints belong to both user D and E?"
+    },
+
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[
+            {"x":0.25,"y":0.5, "size": 10,"users":[1,2]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[0,3,4]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[0,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[0,1,3]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[0,2,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[0,2,3]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[1,2,3,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[3,5]}
+        ],
+            "type":"flake",
+        "showAll":true,
+        "title":"Which datapoints belong to user B?"
+    },
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[3,4]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[1,2,4]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[0,2]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[3,4]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[1,2,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[0,1,2,3]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[0,1,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[0,2,3,5]}
+        ],
+        "type":"flake",
+        "showAll":true,
+        "title":"Which datapoints belong to both user A and C?"
+    },
+
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[
+            {"x":0.25,"y":0.5, "size": 10,"users":[0,1]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[0,1,3,4]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[2,3,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[0,1,3]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[0,2,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[3,1]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[1,2,3,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[3,4]}
+        ],
+        "type":"table",
+        "showAll":true,
+        "title":"Which datapoints belong to user C?"
+    },
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[1,2]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[1,2,3]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[0,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[3,4]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[1,2,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[0,1,2,4]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[0,1,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[3,4]}
+        ],
+        "type":"table",
+        "showAll":true,
+        "title":"Which datapoints belong to both user A and E?"
+    },
+
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[
+            {"x":0.25,"y":0.5, "size": 10,"users":[1,2]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[0,1]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[2,3,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[1,2,3]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[0,1,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[3,1]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[0,2,3,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[1,3,4]}
+        ],
+        "type":"flake",
+        "showAll":false,
+        "title":"Which datapoints belong to user A?"
+    },
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[3,4]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[0,1,3,4]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[0,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[1,3,4]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[0,1,2,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[0,2,3]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[0,1,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[3,5]}
+        ],
+        "type":"flake",
+        "showAll":false,
+        "title":"Which datapoints belong to both user A and B?"
+    },
+
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[
+            {"x":0.25,"y":0.5, "size": 10,"users":[1,2]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[0,1]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[2,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[0,2,3]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[0,1,2,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[3,1]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[1,2,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[3,4]}
+        ],
+        "type":"table",
+        "showAll":false,
+        "title":"Which datapoints belong to user D?"
+    },
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[0,1,2]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[0,1,3,4]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[1,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[3,4]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[1,2,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[0,2,3]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[1,2,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[3,4]}
+        ],
+        "type":"table",
+        "showAll":false,
+        "title":"Which datapoints belong to both user B and C?"
+    },
+
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[
+            {"x":0.25,"y":0.5, "size": 10,"users":[0,2]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[0,1,3,4]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[0,3,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[0,2,3]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[0,1,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[2,4]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[2,3,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[0,1,3,4]}
+        ],
+        "type":"direction",
+        "showAll":true,
+        "title":"Which datapoints belong to user B?"
+    },
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.25,"y":0.5, "size": 10,"users":[1,2]},
+            {"x":0.15,"y":0.20, "size": 5,"users":[1,2,3]},
+            {"x":0.15,"y":0.40, "size": 5,"users":[2,4]},
+            {"x":0.30,"y":0.5, "size": 5,"users":[3,4]},
+            {"x":0.40,"y":0.5, "size": 5,"users":[1,2,4]},
+            {"x":0.65,"y":0.2, "size": 5,"users":[0,1,2,3]},
+            {"x":0.75,"y":0.6, "size": 5,"users":[0,1,2,3,4]},
+            {"x":0.8,"y":0.5, "size": 5,"users":[3,4]}
+        ],
+        "type":"direction",
+        "showAll":true,
+        "title":"Which datapoints belong to both user C and E?"
+    },
+
+    {
+        "users":["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"],
+        "userLocations":[[0,0],[0.3,0],[1,0.2],[0,0.8],[0.7,1]],
+        "polis":[{"x":0.5,"y":0.5, "size": 10,"users":[0,1,2,3,4]}
+        ],
+        "type":"flake",
+        "showAll":true,
+        "title":"Done! Thanks!"
+    }
+
+
+]

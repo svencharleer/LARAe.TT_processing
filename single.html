@@ -19,9 +19,9 @@
     <script type="application/javascript" src="visualization/htmlDockController.js"></script>
     <script type="application/javascript" src="visualization/visualization.js"></script>
 
-    <script src="http://localhost:5555/socket.io/socket.io.js"></script>
+   <script src="http://localhost:5555/socket.io/socket.io.js"></script>
     <script src="http://localhost:8080/socket.io/socket.io.js"></script>
-    <script type="application/javascript" src="http://localhost:5000/libs/socket.io.js"></script>
+    <script type="application/javascript" src="http://localhost:5000/libs/socket.io.js"></script>-->
 
 
 
@@ -42,10 +42,10 @@
             var vis1 = new DataVisualization();
 
 
-            vis1.loadVisualization("canvas1",false,"0xCC00deff","0xCCff03f0");
+            vis1.loadVisualization("canvas1",__testData);
 
 
-            ___socket_JORIS = io.connect("http://localhost:8080");
+            //___socket_JORIS = io.connect("http://localhost:8080");
             document.body.addEventListener('touchmove', function(event) {
                 event.preventDefault();
             }, false);
@@ -64,7 +64,7 @@
                         touchesToDBAdd.push(touchdata);
                         if(touchesToDBAdd.length >100) {
                             console.log("emit")
-                            ___socket_JORIS.emit("touchdata", JSON.stringify(touchesToDBAdd));
+                           // ___socket_JORIS.emit("touchdata", JSON.stringify(touchesToDBAdd));
                             touchesToDBAdd = [];
                         }
                         //console.log(addCursor);
@@ -77,7 +77,7 @@
                         var touchdata = {"timestamp": (new Date()).getTime(), "touch":{"type":"update","x":x, "y":y, "id":updateCursor.cursorId}};
                         touchesToDBUpdate.push(touchdata);
                         if(touchesToDBUpdate.length>1000) {
-                            ___socket_JORIS.emit("touchdata", JSON.stringify(touchesToDBUpdate));
+                            //___socket_JORIS.emit("touchdata", JSON.stringify(touchesToDBUpdate));
                             console.log(touchesToDBUpdate)
                             touchesToDBUpdate = [];
 
@@ -91,7 +91,7 @@
                         var touchdata = {"timestamp": (new Date()).getTime(), "touch":{"type":"remove", "id":removeCursor.cursorId}};
                         touchesToDBRemove.push(touchdata);
                         if(touchesToDBRemove.length>100) {
-                            ___socket_JORIS.emit("touchdata", JSON.stringify(touchesToDBRemove));
+                            //___socket_JORIS.emit("touchdata", JSON.stringify(touchesToDBRemove));
                             touchesToDBRemove = [];
                             console.log("emmitiign")
                         }
@@ -124,14 +124,14 @@
             client.connect();
 
             //socket.io implementation
-            ___browserID = GetURLParameter("id");
-            ___socket_LARA = io.connect("http://localhost:5555");
-             ___socket_LARA.emit("reset",{id:___browserID});
+            //___browserID = GetURLParameter("id");
+            //___socket_LARA = io.connect("http://localhost:5555");
+            // ___socket_LARA.emit("reset",{id:___browserID});
             /*
              ___socket_LARA.emit("addObject", {id:"1",message:"TEST"});
              ___socket_LARA.on("addObject", function(m){console.log(m)});
              */
-            $("#docking").attr('src',"shared.html?id=" + ___browserID);
+            //$("#docking").attr('src',"shared.html?id=" + ___browserID);
         }
 
 

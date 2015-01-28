@@ -16,32 +16,19 @@ function load(callback)
 function loadData()
 {
 
-    if(debug == false)
-        $.getJSON('/wespot/inquiries/getById/39569/', data_loading_done, "json");
-    else {
-
-        $.getJSON('./data/offlineData_W.json', data_loading_done, "json");
+    try {
+        $.getJSON('./data/testData.json', data_loading_done, "json");
     }
+    catch(e)
+    {
+        console.log(e);
+    }
+
 }
 
 function data_loading_done(d)
 {
-    __data = d;
-    loadUsers();
-}
 
-function loadUsers()
-{
-    if(debug == false)
-        $.getJSON('/wespot/user/mapping', user_loading_done, "json");
-    else
-        $.getJSON('./data/offlineUserData.json', user_loading_done, "json");
-}
-
-
-
-function user_loading_done(u)
-{
-    __users = u;
+    __testData = d;
     _dataCallback();
 }
