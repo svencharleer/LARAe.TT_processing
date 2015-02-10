@@ -30,11 +30,11 @@ var AwarenessToken = function()
             _processing.rect(x+sphereWidth/4, y+sphereHeight/3, sphereWidth/2, 4);
 
 
-            _testData[_testPhase].users.forEach(function (k) {
-                var userX = _testData[_testPhase].userLocations[i][0]* screenWidth;
-                var userY = _testData[_testPhase].userLocations[i][1]* screenHeight;
+            Object.keys(___userLocations).forEach(function (k) {
+                var userX = k.x* screenWidth;
+                var userY = k.y* screenHeight;
                 if(users.indexOf(i) >= 0)
-                    _processing.fill(parseInt(_testData[_testPhase].users[i]));
+                    _processing.fill(parseInt(___userColors[i]));
                 else {
                     if(users.indexOf(i) < 0 && all == false) {
                         i++;
@@ -83,11 +83,11 @@ var AwarenessToken = function()
             var x = xx * screenWidth;
             var y = yy * screenHeight;
 
-            _testData[_testPhase].users.forEach(function (k) {
-                var userX = _testData[_testPhase].userLocations[i][0]* screenWidth;
-                var userY = _testData[_testPhase].userLocations[i][1]* screenHeight;
+            Object.keys(___userLocations).forEach(function (k) {
+                var userX =  ___userLocations[k].x* screenWidth;
+                var userY =  ___userLocations[k].y* screenHeight;
                 if(users.indexOf(i) >= 0)
-                    _processing.fill(parseInt(_testData[_testPhase].users[i]));
+                    _processing.fill(parseInt(___userColors[i]));
                 else {
                     if(users.indexOf(i) < 0 && all == false) {
                         i++;
@@ -134,10 +134,10 @@ var AwarenessToken = function()
             _processing.fill(128);
             _processing.ellipse(x+sphereWidth/2,y+sphereHeight/2, sphereWidth,sphereWidth);
 
-            _testData[_testPhase].users.forEach(function (k) {
+            Object.keys(___userLocations).forEach(function (k) {
 
                 if(users.indexOf(i) >= 0)
-                    _processing.fill(parseInt(_testData[_testPhase].users[i]));
+                    _processing.fill(parseInt(___userColors[i]));
                 else {
                     if(users.indexOf(i) < 0 && all == false) {
                         i++;
@@ -179,9 +179,9 @@ var AwarenessToken = function()
             _processing.fill(128);
             _processing.ellipse(x,y, 4,4)
 
-            _testData[_testPhase].users.forEach(function (k) {
-                var userX = _testData[_testPhase].userLocations[i][0]* screenWidth;
-                var userY = _testData[_testPhase].userLocations[i][1]* screenHeight;
+            Object.keys(___userLocations).forEach(function (k) {
+                var userX = ___userLocations[k].x* screenWidth;
+                var userY =  ___userLocations[k].y* screenHeight;
 
                 if(users.indexOf(i) < 0 && all == false) {
                     i++;
@@ -198,7 +198,7 @@ var AwarenessToken = function()
                 _processing.line(x,y,x+xDiff,y+yDiff);
                 _processing.noStroke();
                 if(users.indexOf(i) >= 0)
-                    _processing.fill(parseInt(_testData[_testPhase].users[i]));
+                    _processing.fill(parseInt(___userColors[i]));
                 else
                     _processing.fill(128);
                 _processing.ellipse(x+xDiff,y+yDiff, 4,4)
@@ -229,9 +229,10 @@ var AwarenessToken = function()
             var x = xx * screenWidth;
             var y = yy * screenHeight;
 
-            _testData[_testPhase].users.forEach(function (k) {
-                var userX = _testData[_testPhase].userLocations[i][0]* screenWidth;
-                var userY = _testData[_testPhase].userLocations[i][1]* screenHeight;
+            Object.keys(___userLocations).forEach(function (k) {
+                var userX =  ___userLocations[k].x* screenWidth;
+                var userY =  ___userLocations[k].y* screenHeight;
+
 
                 if(users.indexOf(i) < 0 && all == false) {
                     i++;
@@ -248,7 +249,7 @@ var AwarenessToken = function()
                 _processing.line(x,y,x+xDiff,y+yDiff);
                 _processing.noStroke();
                 if(users.indexOf(i) >= 0)
-                    _processing.fill(parseInt(_testData[_testPhase].users[i]));
+                    _processing.fill(parseInt(___userColors[i]));
                 else
                     _processing.fill(128);
 
@@ -282,9 +283,9 @@ var AwarenessToken = function()
 
 
 
-            _testData[_testPhase].users.forEach(function (k) {
-                var userX = _testData[_testPhase].userLocations[i][0]* screenWidth;
-                var userY = _testData[_testPhase].userLocations[i][1]* screenHeight;
+            Object.keys(___userLocations).forEach(function (k) {
+                var userX =  ___userLocations[k].x* screenWidth;
+                var userY =  ___userLocations[k].y* screenHeight;
 
 
                 if(users.indexOf(i) < 0 && all == false) {
@@ -301,7 +302,7 @@ var AwarenessToken = function()
                 yDiff = v.y * sphereHeight;
 
                 if(users.indexOf(i) >= 0)
-                    _processing.fill(parseInt(_testData[_testPhase].users[i]));
+                    _processing.fill(parseInt(___userColors[i]));
                 else
                     _processing.fill(128);
 
@@ -769,6 +770,26 @@ var DataVisualization = function() {
             },
             "getVisualizationItems": function () {
                 return _circles;
+            },
+            "nextPhase": function()
+            {
+                if(_testTitle == "" && _testData[_testPhase+1] == undefined) {
+                    _testTitle = "DONE. THANKS";
+                    return;
+                }
+                if(_testTitle == "")
+                {
+                    _testPhase++;
+                    createTokens(_p);
+                    _testTitle = _testData[_testPhase].title;
+
+                }
+                else
+                {
+                    _testTitle = "";
+
+
+                }
             }
 
 
@@ -807,6 +828,11 @@ var DataVisualization = function() {
 
 
             __vis.removeTouch(id);
+        },
+        "nextPhase" : function()
+        {
+            __vis.nextPhase();
+
         }
     }
 

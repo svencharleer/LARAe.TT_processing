@@ -19,9 +19,9 @@
     <script type="application/javascript" src="visualization/htmlDockController.js"></script>
     <script type="application/javascript" src="visualization/visualization.js"></script>
 
-   <script src="http://localhost:5555/socket.io/socket.io.js"></script>
-    <script src="http://localhost:8080/socket.io/socket.io.js"></script>
-    <script type="application/javascript" src="http://localhost:5000/libs/socket.io.js"></script>-->
+   <script src="http://localhost:6917/socket.io/socket.io.js"></script>
+    <!--<script src="http://localhost:8080/socket.io/socket.io.js"></script>-->
+    <!-- <script type="application/javascript" src="http://localhost:5000/libs/socket.io.js"></script>-->
 
 
 
@@ -29,6 +29,9 @@
 
         var ___socket_LARA;
         var ___socket_JORIS;
+        var ___socket_POPI;
+        var ___userLocations = {};
+        var ___userColors = ["0xCC8CFF6B","0xCCfff3a2","0xCCff1313","0xCC00deff","0xCCff03f0"];
         var touchesToDBAdd = [], touchesToDBRemove = [], touchesToDBUpdate = [];
         var ___browserID;
         function loadVisualizations()
@@ -43,7 +46,7 @@
 
 
             vis1.loadVisualization("canvas1",__testData);
-
+            vis1.nextPhase();
 
             //___socket_JORIS = io.connect("http://localhost:8080");
             document.body.addEventListener('touchmove', function(event) {
@@ -52,7 +55,7 @@
 
 
 
-            var client = new Tuio.Client({
+          /* var client = new Tuio.Client({
                         host: "http://localhost:5000"
                     }),
 
@@ -122,7 +125,7 @@
             client.on("removeTuioObject", onRemoveTuioObject);
             client.on("refresh", onRefresh);
             client.connect();
-
+*/
             //socket.io implementation
             //___browserID = GetURLParameter("id");
             //___socket_LARA = io.connect("http://localhost:5555");
@@ -132,6 +135,31 @@
              ___socket_LARA.on("addObject", function(m){console.log(m)});
              */
             //$("#docking").attr('src',"shared.html?id=" + ___browserID);
+
+            ___socket_POPI = io.connect("http://localhost:6917");
+            ___socket_POPI.emit("registerPositions");
+            ___socket_POPI.on("positionsUpdate", function(d){
+               if(d == undefined)
+                    return;
+               //we get all positions of people, update them
+                //get all users
+                var users = Object.keys(___userLocations);
+                //update all users
+
+                d.forEach(function(position){
+
+                    ___userLocations[position.id] = position;
+                    //get users that aren't there anymore
+                    if(users.indexOf(""+position.id+"") >= 0)
+                        users.splice(users.indexOf(""+position.id+""),1);
+                });
+                users.forEach(function(userToDelete){
+                    ___userLocations[userToDelete] = undefined;
+                    delete ___userLocations[userToDelete];
+                })
+
+            });
+
         }
 
 
